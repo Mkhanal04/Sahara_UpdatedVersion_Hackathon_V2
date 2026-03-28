@@ -8,7 +8,9 @@ export default defineConfig(({mode}) => {
   return {
     plugins: [react(), tailwindcss()],
     define: {
-      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
+      // process.env.GEMINI_API_KEY is set by Vercel at build time.
+      // env.GEMINI_API_KEY is the fallback from local .env file via loadEnv.
+      'process.env.GEMINI_API_KEY': JSON.stringify(process.env.GEMINI_API_KEY || env.GEMINI_API_KEY),
     },
     resolve: {
       alias: {
