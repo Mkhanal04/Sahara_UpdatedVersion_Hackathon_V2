@@ -1,0 +1,5 @@
+{
+  "name": "SAHARA Mental Health",
+  "description": "A culturally-sensitive mental health companion for the Nepali diaspora, featuring AI chat, voice journaling, and professional tools.",
+  "requestFramePermissions": ["microphone"]
+}
