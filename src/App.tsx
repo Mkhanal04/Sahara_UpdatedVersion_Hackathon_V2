@@ -193,20 +193,7 @@ export default function App() {
               <button onClick={() => navigateTab('user-home')} className="mt-8 text-brand-rust font-medium">Back to Home</button>
             </div>
           )}
-          {currentView === 'user-help' && (
-            <div className="p-8 flex flex-col h-full items-center justify-center text-center">
-              <button 
-                onClick={goBack}
-                className="absolute top-6 left-6 w-10 h-10 rounded-full bg-brand-surface flex items-center justify-center text-brand-ink border border-brand-border hover:bg-brand-surface-alt transition-colors"
-              >
-                <ChevronLeft size={20} />
-              </button>
-              <Phone size={48} className="text-brand-rust mb-4" />
-              <h2 className="font-serif text-2xl font-semibold text-brand-ink mb-2">Help & Support</h2>
-              <p className="text-brand-ink/60 text-sm">This feature is coming soon.</p>
-              <button onClick={() => navigateTab('user-home')} className="mt-8 text-brand-rust font-medium">Back to Home</button>
-            </div>
-          )}
+          {currentView === 'user-help' && <HelpScreen onBack={goBack} onHome={() => navigateTab('user-home')} />}
         </div>
 
         {/* Bottom Navigation (User) */}
@@ -323,6 +310,97 @@ function DemoSelectScreen({ onSelect }: { onSelect: (role: 'pro' | 'user') => vo
   );
 }
 
+function HelpScreen({ onBack, onHome }: { onBack: () => void, onHome: () => void }) {
+  return (
+    <div className="flex flex-col h-full bg-brand-bg">
+      {/* Header */}
+      <div className="px-6 py-6 flex items-center gap-4">
+        <button
+          onClick={onBack}
+          className="w-10 h-10 rounded-full bg-brand-surface flex items-center justify-center text-brand-ink border border-brand-border hover:bg-brand-surface-alt transition-colors"
+        >
+          <ChevronLeft size={20} />
+        </button>
+        <h1 className="font-serif text-2xl font-semibold text-brand-ink">Help & Support</h1>
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-6 pb-8 space-y-4">
+
+        {/* Crisis Helplines */}
+        <div className="bg-[#2C1810] rounded-2xl p-5 shadow-sm">
+          <p className="text-xs font-bold uppercase tracking-wider text-white/50 mb-3">Crisis Support — Always Available</p>
+          <a
+            href="tel:1166"
+            className="flex items-center gap-3 py-3 border-b border-white/10"
+          >
+            <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+              <Phone size={18} className="text-white" />
+            </div>
+            <div>
+              <p className="text-white font-semibold text-base">Nepal: 1166</p>
+              <p className="text-white/50 text-xs">National Mental Health Helpline</p>
+            </div>
+          </a>
+          <a
+            href="tel:988"
+            className="flex items-center gap-3 pt-3"
+          >
+            <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+              <Phone size={18} className="text-white" />
+            </div>
+            <div>
+              <p className="text-white font-semibold text-base">US: 988</p>
+              <p className="text-white/50 text-xs">Suicide & Crisis Lifeline</p>
+            </div>
+          </a>
+        </div>
+
+        {/* Important Disclaimer */}
+        <div className="bg-brand-surface border border-brand-border rounded-2xl p-5 shadow-sm">
+          <div className="flex items-center gap-2 mb-3">
+            <AlertCircle size={16} className="text-brand-rust shrink-0" />
+            <p className="text-xs font-bold uppercase tracking-wider text-brand-ink/50">Important Disclaimer</p>
+          </div>
+          <p className="text-sm text-brand-ink/80 leading-relaxed">
+            Sahara is not a diagnostic tool and does not provide medical advice, diagnoses, or treatment. The AI companion organizes your observations — it never labels, categorizes, or diagnoses conditions.
+          </p>
+        </div>
+
+        {/* About Sahara */}
+        <div className="bg-brand-surface border border-brand-border rounded-2xl p-5 shadow-sm">
+          <div className="flex items-center gap-2 mb-3">
+            <Heart size={16} className="text-brand-rust shrink-0" />
+            <p className="text-xs font-bold uppercase tracking-wider text-brand-ink/50">About Sahara</p>
+          </div>
+          <p className="text-sm text-brand-ink/80 leading-relaxed">
+            Sahara is a culturally-grounded mental health platform built for families and individuals in collectivist communities. We recognize that in many cultures, a family member notices a change before anyone else does. Sahara creates a structured pathway for that person — the one who noticed — alongside support for individuals seeking to understand themselves.
+          </p>
+        </div>
+
+        {/* Privacy */}
+        <div className="bg-brand-surface border border-brand-border rounded-2xl p-5 shadow-sm">
+          <div className="flex items-center gap-2 mb-3">
+            <Lock size={16} className="text-brand-rust shrink-0" />
+            <p className="text-xs font-bold uppercase tracking-wider text-brand-ink/50">Privacy</p>
+          </div>
+          <p className="text-sm text-brand-ink/80 leading-relaxed">
+            All community stories are anonymous and moderated. Your conversations with Maan are private and not shared without your consent. This prototype does not collect or store real patient data.
+          </p>
+        </div>
+
+        {/* Back to Home */}
+        <button
+          onClick={onHome}
+          className="w-full bg-brand-rust hover:bg-brand-rust/90 text-white rounded-2xl py-4 font-medium text-base transition-colors shadow-sm"
+        >
+          Back to Home
+        </button>
+
+      </div>
+    </div>
+  );
+}
+
 function UserHomeScreen({ onStartChat, onExplore }: { onStartChat: (context: string) => void, onExplore: () => void }) {
   return (
     <div className="flex flex-col h-full bg-brand-bg relative pb-6">
@@ -404,6 +482,9 @@ function UserHomeScreen({ onStartChat, onExplore }: { onStartChat: (context: str
           <button onClick={onExplore} className="w-full text-center py-4 text-sm font-medium text-brand-rust hover:underline mt-2">
             See all community stories &rarr;
           </button>
+          <p className="text-center text-brand-ink/40 mt-1" style={{ fontSize: '10px' }}>
+            Sahara organizes observations — it does not diagnose or replace professional care.
+          </p>
         </div>
       </div>
     </div>
@@ -868,6 +949,9 @@ function AiChatScreen({ context, onBack, onExplore, onConsult, onSaveJournal }: 
             <h2 className="font-serif text-2xl font-semibold text-brand-ink mb-2">Namaste, sathi</h2>
             <p className="text-sm text-brand-ink/70 max-w-[260px]">
               Something brought you here today. You do not have to explain it perfectly — just start anywhere.
+            </p>
+            <p className="text-brand-ink/40 mt-2 max-w-[260px]" style={{ fontSize: '10px' }}>
+              Maan helps organize your thoughts — it does not diagnose or replace professional care.
             </p>
           </div>
         )}
