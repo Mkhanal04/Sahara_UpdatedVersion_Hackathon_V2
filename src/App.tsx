@@ -467,7 +467,7 @@ export default function App() {
 
         {/* Bottom Navigation (User) */}
         {['user-home', 'community-feed', 'user-consultation', 'user-journal'].includes(currentView) && (
-          <nav aria-label="Main navigation" className="bg-brand-bg border-t border-brand-border px-6 py-4 flex justify-between items-center pb-8">
+          <nav aria-label="Main navigation" className="absolute bottom-0 w-full z-50 bg-brand-bg/85 backdrop-blur-xl border-t border-brand-border/50 px-6 py-4 flex justify-between items-center pb-8">
             <button
               aria-current={currentView === 'user-home' ? 'page' : undefined}
               onClick={() => navigateTab('user-home')}
@@ -588,7 +588,8 @@ function DemoSelectScreen({ onSelect, onAdmin }: { onSelect: (role: 'pro' | 'use
       <div className="w-full space-y-4">
         <button
           onClick={() => onSelect('user')}
-          className="w-full bg-brand-rust rounded-2xl p-6 text-left transition-colors shadow-sm group"
+          className="w-full bg-brand-rust rounded-2xl p-6 text-left transition-colors shadow-sm group animate-fade-up"
+          style={{ animationDelay: '0ms' }}
         >
           <div className="flex items-center justify-between mb-2">
             <h2 className="font-serif text-xl font-semibold text-[#FDF6F0]">Patient / Family</h2>
@@ -599,7 +600,8 @@ function DemoSelectScreen({ onSelect, onAdmin }: { onSelect: (role: 'pro' | 'use
 
         <button
           onClick={() => onSelect('pro')}
-          className="w-full bg-brand-surface border border-brand-border hover:bg-brand-surface-alt rounded-2xl p-6 text-left transition-colors shadow-sm group"
+          className="w-full bg-brand-surface border border-brand-border hover:bg-brand-surface-alt rounded-2xl p-6 text-left transition-colors shadow-sm group animate-fade-up"
+          style={{ animationDelay: '150ms' }}
         >
           <div className="flex items-center justify-between mb-2">
             <h2 className="font-serif text-xl font-semibold text-brand-ink">Professional</h2>
@@ -610,7 +612,8 @@ function DemoSelectScreen({ onSelect, onAdmin }: { onSelect: (role: 'pro' | 'use
 
         <button
           onClick={onAdmin}
-          className="w-full bg-brand-surface border border-brand-border hover:bg-brand-surface-alt rounded-2xl p-6 text-left transition-colors shadow-sm group"
+          className="w-full bg-brand-surface border border-brand-border hover:bg-brand-surface-alt rounded-2xl p-6 text-left transition-colors shadow-sm group animate-fade-up"
+          style={{ animationDelay: '300ms' }}
         >
           <div className="flex items-center justify-between mb-2">
             <h2 className="font-serif text-xl font-semibold text-brand-ink">Admin Portal</h2>
@@ -1761,9 +1764,8 @@ function AiChatScreen({ context, onBack, onExplore, onConsult, onSaveJournal, on
         {isLoading && (
           <div className="flex justify-start">
             <div className="max-w-[85%] rounded-2xl p-4 bg-brand-surface border border-brand-border text-brand-ink rounded-bl-sm shadow-sm flex items-center gap-2">
-              <div className="w-2 h-2 bg-brand-rust/50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-              <div className="w-2 h-2 bg-brand-rust/50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-              <div className="w-2 h-2 bg-brand-rust/50 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+              <Sparkles size={16} className="text-brand-rust animate-pulse" />
+              <span className="text-xs font-semibold text-brand-ink/70">Maan is organizing thoughts...</span>
             </div>
           </div>
         )}
