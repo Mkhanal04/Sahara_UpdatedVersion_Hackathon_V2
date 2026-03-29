@@ -4,6 +4,8 @@
 
 Sahara is a mental health platform designed for collectivist cultures where the family member — not the patient — is often the first person to notice something is wrong. The platform provides two front doors: one for concerned family members and one for individuals seeking help, connecting both with AI-guided conversations, community support, and licensed professionals.
 
+**Live demo:** [team23hackathon.vercel.app](https://team23hackathon.vercel.app)
+
 ## Problem Statement
 
 *Statement 2: "Create solutions that lower mental health stigma and improve early support in culturally conservative communities."*
@@ -112,10 +114,9 @@ Prototype Environment → Professional → Login → Queue → Review Brief (Sit
 | Name | Role |
 |------|------|
 | Milan Khanal | PM / Team Lead |
-| [Teammate 2] | [Role] |
-| [Teammate 3] | [Role] |
-| [Teammate 4] | [Role] |
-| [Teammate 5] | [Role] |
+| Tanu Nepal | Research Engineering |
+| Saroj Shrestha | Research & Content |
+| Utsav Shrestha | Design & Frontend |
 
 ## License
 
