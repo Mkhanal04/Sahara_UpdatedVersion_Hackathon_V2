@@ -15,11 +15,36 @@
   --color-brand-surface: #FFFFFF;
   --color-brand-surface-alt: #F0EAE3;
   --color-brand-border: #E5DCD3;
+
+  --color-brand-on-rust: #FDF6F0;
+  --color-brand-badge-green-text: #3A4A36;
+  --color-brand-badge-rust-text: #5A3A30;
+}
+
+/* Dark theme — activated by .dark class on <html> */
+.dark {
+  --color-brand-bg: #1C1512;
+  --color-brand-ink: #EDE5DC;
+  --color-brand-rust: #D4917D;
+  --color-brand-rust-light: #3D2A23;
+  --color-brand-green: #8FA38A;
+  --color-brand-green-light: #2A3328;
+  --color-brand-surface: #271E1A;
+  --color-brand-surface-alt: #322820;
+  --color-brand-border: #3D3330;
+  --color-brand-on-rust: #1C1512;
+  --color-brand-badge-green-text: #B5CCAF;
+  --color-brand-badge-rust-text: #E8C4B5;
 }
 
 body {
   background-color: #E5E5E5; /* Darker background outside the mobile shell */
   color: var(--color-brand-ink);
+}
+
+.dark body,
+body.dark {
+  background-color: #0F0C0A;
 }
 
 /* Hide ugly scrollbars globally — keep scroll functional */

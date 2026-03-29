@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { ShieldCheck, Lock, FileText, Calendar, Users, Home, ThumbsUp, ThumbsDown, ArrowRight, ChevronLeft, MessageCircle, AlertCircle, Heart, UserPlus, Eye, Sparkles, Send, User, Edit3, Phone, Mic, Square, BookOpen, Activity, Info, Shield, Globe, Bot, BarChart3, LogOut } from 'lucide-react';
+import { ShieldCheck, Lock, FileText, Calendar, Users, Home, ThumbsUp, ThumbsDown, ArrowRight, ChevronLeft, MessageCircle, AlertCircle, Heart, UserPlus, Eye, Sparkles, Send, User, Edit3, Phone, Mic, Square, BookOpen, Activity, Info, Shield, Globe, Bot, BarChart3, LogOut, Sun, Moon } from 'lucide-react';
 import { generateChatResponse, generateObservationSummary } from './services/geminiService';
 
 // --- LANGUAGE STRINGS ---
@@ -225,6 +225,11 @@ export default function App() {
   const [showSignUpPrompt, setShowSignUpPrompt] = useState(false);
   const [language, setLanguage] = useState<Language>('en');
   const t = useCallback((key: string) => STRINGS[language]?.[key] ?? key, [language]);
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', isDark);
+  }, [isDark]);
 
   useEffect(() => {
     if (generatedSummary) {
@@ -302,7 +307,7 @@ export default function App() {
               t={t}
             />
           )}
-          {currentView === 'user-home' && <UserHomeScreen onStartChat={(ctx) => { setChatContext(ctx); setAutoStartMicNext(false); setCurrentView('ai-chat'); }} onExplore={() => setCurrentView('community-feed')} userType={userType} userName={userName} language={language} setLanguage={setLanguage} t={t} onLogout={() => setCurrentView('demo-select')} />}
+          {currentView === 'user-home' && <UserHomeScreen onStartChat={(ctx) => { setChatContext(ctx); setAutoStartMicNext(false); setCurrentView('ai-chat'); }} onExplore={() => setCurrentView('community-feed')} userType={userType} userName={userName} language={language} setLanguage={setLanguage} t={t} onLogout={() => setCurrentView('demo-select')} isDark={isDark} setIsDark={setIsDark} />}
           {currentView === 'admin' && <AdminDashboardScreen onBack={goBack} onLogout={() => setCurrentView('demo-select')} />}
           {currentView === 'ai-chat' && <AiChatScreen context={chatContext} onBack={goBack} onExplore={() => setCurrentView('community-feed')} onConsult={() => { setBookingType(chatContext === 'family' ? 'Family Guidance' : 'Individual Session'); setBookingStep('browse'); setCurrentView('user-consultation'); }} onSaveJournal={handleSaveJournal} onGenerateSummary={(msgs) => { setChatMessages(msgs); setCurrentView('user-summary'); }} autoStartMic={autoStartMicNext} />}
           {currentView === 'user-summary' && (
@@ -358,7 +363,7 @@ export default function App() {
                     <p className="text-sm font-medium text-brand-rust mb-1">{bookingTime}</p>
                     <p className="text-xs text-brand-ink/50 mb-6">{bookingType}</p>
                     <p className="text-xs text-brand-ink/50 mb-8 max-w-[260px]">You'll receive preparation guidance before your session. Your Maan conversation summary will be shared with the professional (with your consent).</p>
-                    <button onClick={() => navigateTab('user-home')} className="w-full bg-brand-rust text-[#FDF6F0] rounded-2xl py-4 font-medium text-sm mb-3">Back to Home</button>
+                    <button onClick={() => navigateTab('user-home')} className="w-full bg-brand-rust text-brand-on-rust rounded-2xl py-4 font-medium text-sm mb-3">Back to Home</button>
                     <button onClick={() => setCurrentView('community-feed')} className="w-full bg-brand-surface border border-brand-border text-brand-ink rounded-2xl py-4 font-medium text-sm">Continue Exploring</button>
                   </div>
                 ) : (
@@ -430,7 +435,7 @@ export default function App() {
                       <div>
                         <button
                           onClick={() => { if (userType === 'guest') { setShowSignUpPrompt(true); return; } setBookingStep('done'); }}
-                          className="w-full bg-brand-rust text-[#FDF6F0] rounded-2xl py-4 font-medium text-sm shadow-md hover:bg-brand-rust/90 transition-colors"
+                          className="w-full bg-brand-rust text-brand-on-rust rounded-2xl py-4 font-medium text-sm shadow-md hover:bg-brand-rust/90 transition-colors"
                         >
                           Book Consultation
                         </button>
@@ -532,7 +537,7 @@ export default function App() {
               onClick={() => navigateTab('profile')}
               className={`flex flex-col items-center transition-colors ${currentView === 'profile' ? 'text-brand-rust' : 'text-brand-ink/50 hover:text-brand-ink'}`}
             >
-              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-serif ${currentView === 'profile' ? 'bg-brand-rust text-[#FDF6F0]' : 'bg-brand-surface-alt border border-brand-border text-brand-ink'}`}>
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-serif ${currentView === 'profile' ? 'bg-brand-rust text-brand-on-rust' : 'bg-brand-surface-alt border border-brand-border text-brand-ink'}`}>
                 Dr
               </div>
               <span className="text-[10px] font-medium mt-1">Profile</span>
@@ -553,7 +558,7 @@ export default function App() {
                 <p className="text-sm text-brand-ink/60 mb-6">{t('auth.joinDesc')}</p>
                 <button
                   onClick={() => { setUserType('user'); setUserName('Sita'); setShowSignUpPrompt(false); }}
-                  className="w-full py-4 rounded-2xl bg-brand-rust text-[#FDF6F0] font-semibold text-sm shadow-sm mb-3"
+                  className="w-full py-4 rounded-2xl bg-brand-rust text-brand-on-rust font-semibold text-sm shadow-sm mb-3"
                 >
                   {t('auth.createFree')}
                 </button>
@@ -578,7 +583,7 @@ function DemoSelectScreen({ onSelect, onAdmin }: { onSelect: (role: 'pro' | 'use
   return (
     <div className="p-8 flex flex-col h-full justify-center items-center text-center bg-brand-bg">
       <div className="mb-12">
-        <div className="w-16 h-16 bg-brand-rust text-[#FDF6F0] rounded-2xl flex items-center justify-center font-serif text-3xl shadow-md mx-auto mb-6">
+        <div className="w-16 h-16 bg-brand-rust text-brand-on-rust rounded-2xl flex items-center justify-center font-serif text-3xl shadow-md mx-auto mb-6">
           S
         </div>
         <h1 className="font-serif text-4xl font-semibold tracking-tight text-brand-ink mb-2">Sahara</h1>
@@ -592,10 +597,10 @@ function DemoSelectScreen({ onSelect, onAdmin }: { onSelect: (role: 'pro' | 'use
           style={{ animationDelay: '0ms' }}
         >
           <div className="flex items-center justify-between mb-2">
-            <h2 className="font-serif text-xl font-semibold text-[#FDF6F0]">Patient / Family</h2>
-            <ArrowRight size={20} className="text-[#FDF6F0]/70" />
+            <h2 className="font-serif text-xl font-semibold text-brand-on-rust">Patient / Family</h2>
+            <ArrowRight size={20} className="text-brand-on-rust/70" />
           </div>
-          <p className="text-sm text-[#FDF6F0]/70">Community feed, anonymous browsing, and intake flow.</p>
+          <p className="text-sm text-brand-on-rust/70">Community feed, anonymous browsing, and intake flow.</p>
         </button>
 
         <button
@@ -647,7 +652,7 @@ function WelcomeScreen({ onCreateAccount, onLogin, onExplore, t }: {
       <div className="w-full space-y-3 mb-6">
         <button
           onClick={onCreateAccount}
-          className="w-full py-4 rounded-2xl bg-brand-rust text-[#FDF6F0] font-semibold text-sm shadow-sm flex items-center justify-center gap-2"
+          className="w-full py-4 rounded-2xl bg-brand-rust text-brand-on-rust font-semibold text-sm shadow-sm flex items-center justify-center gap-2"
         >
           <Users size={16} />
           {t('welcome.createAccount')}
@@ -695,7 +700,7 @@ function HelpScreen({ onBack, onHome }: { onBack: () => void, onHome: () => void
       <div className="flex-1 overflow-y-auto px-6 pb-8 space-y-4">
 
         {/* Crisis Helplines */}
-        <div className="bg-[#2C1810] rounded-2xl p-5 shadow-sm">
+        <div className="bg-brand-ink rounded-2xl p-5 shadow-sm">
           <p className="text-xs font-bold uppercase tracking-wider text-white/50 mb-3">Crisis Support — Always Available</p>
           <a
             href="tel:1166"
@@ -769,13 +774,13 @@ function HelpScreen({ onBack, onHome }: { onBack: () => void, onHome: () => void
   );
 }
 
-function UserHomeScreen({ onStartChat, onExplore, userType, userName, language, setLanguage, t, onLogout }: { onStartChat: (context: string) => void, onExplore: () => void, userType: 'guest' | 'user', userName: string, language: Language, setLanguage: (l: Language) => void, t: (key: string) => string, onLogout: () => void }) {
+function UserHomeScreen({ onStartChat, onExplore, userType, userName, language, setLanguage, t, onLogout, isDark, setIsDark }: { onStartChat: (context: string) => void, onExplore: () => void, userType: 'guest' | 'user', userName: string, language: Language, setLanguage: (l: Language) => void, t: (key: string) => string, onLogout: () => void, isDark: boolean, setIsDark: (v: boolean) => void }) {
   return (
     <div className="flex flex-col h-full bg-brand-bg relative pb-24">
       {/* Header */}
       <div className="px-6 py-6 flex items-center justify-between border-b border-brand-border">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-brand-rust text-[#FDF6F0] rounded-full flex items-center justify-center font-serif text-lg shadow-sm">
+          <div className="w-8 h-8 bg-brand-rust text-brand-on-rust rounded-full flex items-center justify-center font-serif text-lg shadow-sm">
             S
           </div>
           <span className="font-serif text-xl font-semibold text-brand-ink">Sahara</span>
@@ -787,6 +792,13 @@ function UserHomeScreen({ onStartChat, onExplore, userType, userName, language, 
             className="w-8 h-8 rounded-full bg-brand-surface border border-brand-border flex items-center justify-center text-[10px] font-bold text-brand-ink/60 hover:bg-brand-surface-alt transition-colors"
           >
             {language === 'en' ? 'ने' : 'EN'}
+          </button>
+          <button
+            onClick={() => setIsDark(!isDark)}
+            className="w-8 h-8 rounded-full bg-brand-surface-alt border border-brand-border flex items-center justify-center text-brand-ink/60 hover:text-brand-ink transition-colors"
+            aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            {isDark ? <Sun size={14} /> : <Moon size={14} />}
           </button>
           <div className={`w-8 h-8 rounded-full flex items-center justify-center font-serif text-sm shadow-sm ${
             userType === 'guest'
@@ -901,7 +913,7 @@ function LoginScreen({ onLogin, onBack }: { onLogin: () => void, onBack: () => v
 
       <div className="flex-1 mt-16">
         <div className="flex items-center gap-3 mb-8">
-          <div className="w-12 h-12 bg-brand-rust text-[#FDF6F0] rounded-xl flex items-center justify-center font-serif text-2xl shadow-sm">
+          <div className="w-12 h-12 bg-brand-rust text-brand-on-rust rounded-xl flex items-center justify-center font-serif text-2xl shadow-sm">
             S
           </div>
           <h1 className="font-serif text-3xl font-semibold tracking-tight text-brand-ink">Sahara</h1>
@@ -1097,7 +1109,7 @@ function JournalScreen({ entries, onBack, onStartChat }: { entries: any[], onBac
         <div className="absolute bottom-6 right-6 z-20">
           <button 
             onClick={onStartChat}
-            className="w-14 h-14 rounded-full bg-brand-rust text-[#FDF6F0] shadow-[0_8px_16px_rgba(189,111,88,0.3)] flex items-center justify-center hover:bg-brand-rust/90 transition-transform hover:scale-105 active:scale-95 group"
+            className="w-14 h-14 rounded-full bg-brand-rust text-brand-on-rust shadow-[0_8px_16px_rgba(189,111,88,0.3)] flex items-center justify-center hover:bg-brand-rust/90 transition-transform hover:scale-105 active:scale-95 group"
             aria-label="New Voice Entry"
           >
             <Mic size={24} className="group-hover:-translate-y-0.5 transition-transform" />
@@ -1273,7 +1285,7 @@ function CommunityFeedScreen({ onBack, onStartShare, userType, userName, onAuthR
 
             <div className="bg-brand-rust/5 rounded-2xl p-5 border border-brand-rust/10 text-center">
               <p className="text-sm text-brand-ink/70 mb-3">Going through something similar?</p>
-              <button onClick={() => { if (userType === 'guest') { onAuthRequired(); return; } setSelectedStory(null); onStartShare(); }} className="bg-brand-rust text-[#FDF6F0] rounded-xl px-6 py-3 text-sm font-medium">
+              <button onClick={() => { if (userType === 'guest') { onAuthRequired(); return; } setSelectedStory(null); onStartShare(); }} className="bg-brand-rust text-brand-on-rust rounded-xl px-6 py-3 text-sm font-medium">
                 Share Your Experience
               </button>
             </div>
@@ -1298,7 +1310,7 @@ function CommunityFeedScreen({ onBack, onStartShare, userType, userName, onAuthR
           <button onClick={onBack} aria-label="Go back" className="w-11 h-11 rounded-full bg-brand-surface flex items-center justify-center text-brand-ink border border-brand-border hover:bg-brand-surface-alt transition-colors">
             <ChevronLeft size={20} />
           </button>
-          <div className="w-10 h-10 bg-brand-rust text-[#FDF6F0] rounded-full flex items-center justify-center font-serif text-xl shadow-sm">S</div>
+          <div className="w-10 h-10 bg-brand-rust text-brand-on-rust rounded-full flex items-center justify-center font-serif text-xl shadow-sm">S</div>
         </div>
         <h1 className="font-serif text-3xl font-semibold text-brand-ink mb-1">Chautari / Ma Pani</h1>
         <p className="text-brand-ink/60 text-sm">{t('chautari.subtitle')}</p>
@@ -1339,7 +1351,7 @@ function CommunityFeedScreen({ onBack, onStartShare, userType, userName, onAuthR
             ? <span className="text-sm font-medium text-brand-ink/80 flex-1">{t('chautari.signUpToShare')}</span>
             : <span className="text-sm font-medium text-brand-ink/80 flex-1">What's on your mind?</span>
           }
-          <div className="text-xs font-bold uppercase tracking-wider text-[#FDF6F0] bg-brand-rust px-4 py-2 rounded-full flex items-center gap-1 hover:bg-brand-rust/90 transition-colors">
+          <div className="text-xs font-bold uppercase tracking-wider text-brand-on-rust bg-brand-rust px-4 py-2 rounded-full flex items-center gap-1 hover:bg-brand-rust/90 transition-colors">
             Share <ArrowRight size={14} />
           </div>
         </div>
@@ -1700,7 +1712,7 @@ function AiChatScreen({ context, onBack, onExplore, onConsult, onSaveJournal, on
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
         {messages.length === 1 && (
           <div className="flex flex-col items-center text-center mb-8 mt-4">
-            <div className="w-16 h-16 bg-brand-rust/80 text-[#FDF6F0] rounded-full flex items-center justify-center font-serif text-2xl mb-4 shadow-sm">
+            <div className="w-16 h-16 bg-brand-rust/80 text-brand-on-rust rounded-full flex items-center justify-center font-serif text-2xl mb-4 shadow-sm">
               म
             </div>
             <p className="text-brand-green text-xs font-medium mb-2">
@@ -1746,7 +1758,7 @@ function AiChatScreen({ context, onBack, onExplore, onConsult, onSaveJournal, on
 
           return (
             <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[85%] rounded-2xl p-4 ${msg.role === 'user' ? 'bg-brand-rust/80 text-[#FDF6F0] rounded-br-sm' : 'bg-brand-surface border border-brand-border text-brand-ink rounded-bl-sm shadow-sm'}`}>
+              <div className={`max-w-[85%] rounded-2xl p-4 ${msg.role === 'user' ? 'bg-brand-rust/80 text-brand-on-rust rounded-br-sm' : 'bg-brand-surface border border-brand-border text-brand-ink rounded-bl-sm shadow-sm'}`}>
                 <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.text}</p>
               </div>
             </div>
@@ -1825,7 +1837,7 @@ function AiChatScreen({ context, onBack, onExplore, onConsult, onSaveJournal, on
                 onClick={() => handleSend(inputValue)}
                 aria-label="Send message"
                 disabled={isLoading}
-                className="w-11 h-11 rounded-full bg-brand-rust text-[#FDF6F0] shadow-sm flex items-center justify-center hover:bg-brand-rust/90 transition-transform hover:scale-105 active:scale-95 shrink-0 disabled:opacity-50"
+                className="w-11 h-11 rounded-full bg-brand-rust text-brand-on-rust shadow-sm flex items-center justify-center hover:bg-brand-rust/90 transition-transform hover:scale-105 active:scale-95 shrink-0 disabled:opacity-50"
               >
                 <Send size={16} />
               </button>
@@ -1834,7 +1846,7 @@ function AiChatScreen({ context, onBack, onExplore, onConsult, onSaveJournal, on
                 onClick={toggleRecording}
                 aria-label="Voice input"
                 disabled={isLoading}
-                className="w-11 h-11 rounded-full bg-brand-rust text-[#FDF6F0] shadow-sm flex items-center justify-center hover:bg-brand-rust/90 transition-transform hover:scale-105 active:scale-95 shrink-0 disabled:opacity-50"
+                className="w-11 h-11 rounded-full bg-brand-rust text-brand-on-rust shadow-sm flex items-center justify-center hover:bg-brand-rust/90 transition-transform hover:scale-105 active:scale-95 shrink-0 disabled:opacity-50"
               >
                 <Mic size={18} />
               </button>
@@ -2032,8 +2044,8 @@ function DashboardScreen({ consultations, onViewBrief, onLogout }: { consultatio
             <div className="mb-4 mt-2">
               <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${
                 consult.isFamily 
-                  ? 'bg-brand-green-light text-[#3A4A36]' 
-                  : 'bg-brand-rust-light text-[#5A3A30]'
+                  ? 'bg-brand-green-light text-brand-badge-green-text' 
+                  : 'bg-brand-rust-light text-brand-badge-rust-text'
               }`}>
                 {consult.isFamily ? <Users size={12} /> : <Home size={12} />}
                 {consult.type}
@@ -2079,7 +2091,7 @@ function ScheduleScreen() {
       {/* Week View */}
       <div className="flex justify-between mb-8">
         {days.map((d, i) => (
-          <div key={i} className={`flex flex-col items-center p-3 rounded-2xl min-w-[3rem] ${d.active ? 'bg-brand-rust text-[#FDF6F0] shadow-md' : 'bg-brand-surface border border-brand-border text-brand-ink/60'}`}>
+          <div key={i} className={`flex flex-col items-center p-3 rounded-2xl min-w-[3rem] ${d.active ? 'bg-brand-rust text-brand-on-rust shadow-md' : 'bg-brand-surface border border-brand-border text-brand-ink/60'}`}>
             <span className="text-[10px] uppercase font-semibold tracking-wider mb-1">{d.day}</span>
             <span className={`font-serif text-xl ${d.active ? 'text-white' : 'text-brand-ink'}`}>{d.date}</span>
           </div>
@@ -2147,8 +2159,8 @@ function ProfileScreen() {
         <div className="flex flex-wrap gap-2">
           <span className="px-3 py-1.5 bg-brand-bg rounded-lg text-xs font-medium text-brand-ink border border-brand-border">🇳🇵 Fluent Nepali</span>
           <span className="px-3 py-1.5 bg-brand-bg rounded-lg text-xs font-medium text-brand-ink border border-brand-border">🇬🇧 Fluent English</span>
-          <span className="px-3 py-1.5 bg-brand-rust-light/50 rounded-lg text-xs font-medium text-[#5A3A30] border border-brand-rust/20">Family Systems</span>
-          <span className="px-3 py-1.5 bg-brand-green-light/50 rounded-lg text-xs font-medium text-[#3A4A36] border border-brand-green/20">Intergenerational Trauma</span>
+          <span className="px-3 py-1.5 bg-brand-rust-light/50 rounded-lg text-xs font-medium text-brand-badge-rust-text border border-brand-rust/20">Family Systems</span>
+          <span className="px-3 py-1.5 bg-brand-green-light/50 rounded-lg text-xs font-medium text-brand-badge-green-text border border-brand-green/20">Intergenerational Trauma</span>
         </div>
       </div>
 
@@ -2334,8 +2346,8 @@ function PatientBriefScreen({ consult, onBack }: { consult: any, onBack: () => v
             <p className="text-[11px] uppercase tracking-wider font-semibold text-brand-ink/50 mb-1.5">Consultation Type</p>
             <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium ${
               consult.isFamily 
-                ? 'bg-brand-green-light text-[#3A4A36]' 
-                : 'bg-brand-rust-light text-[#5A3A30]'
+                ? 'bg-brand-green-light text-brand-badge-green-text' 
+                : 'bg-brand-rust-light text-brand-badge-rust-text'
             }`}>
               {consult.isFamily ? <Users size={16} /> : <Home size={16} />}
               {consult.type}
