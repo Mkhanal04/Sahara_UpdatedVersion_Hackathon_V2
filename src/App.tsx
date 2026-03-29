@@ -99,6 +99,9 @@ export default function App() {
   const [chatContext, setChatContext] = useState<string>('self');
   const [journalEntries, setJournalEntries] = useState(MOCK_JOURNAL_ENTRIES);
   const [journalUnlocked, setJournalUnlocked] = useState(false);
+  const [bookingStep, setBookingStep] = useState<'browse' | 'confirm' | 'done'>('browse');
+  const [bookingType, setBookingType] = useState<string | null>(null);
+  const [bookingTime, setBookingTime] = useState<string | null>(null);
 
   const handleSaveJournal = (summary: string, mood: string, techniques: string[]) => {
     const newEntry = {
@@ -152,19 +155,17 @@ export default function App() {
       {/* Mobile Shell Container */}
       <div className="w-full max-w-[390px] h-[844px] max-h-[90vh] bg-brand-bg rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col relative border-4 border-white">
         
-        {/* Top Crisis Banner */}
-        <div className="bg-[#4A3B36] text-white text-xs font-medium py-2 px-4 text-center z-50">
-          Crisis support available — Nepal: 1166 · US: 988
-        </div>
-
         {/* Content Area */}
         <div className="flex-1 overflow-y-auto relative scrollbar-hide">
           {currentView === 'demo-select' && <DemoSelectScreen onSelect={(role) => navigateTab(role === 'pro' ? 'login' : 'user-home')} />}
           {currentView === 'user-home' && <UserHomeScreen onStartChat={(ctx) => { setChatContext(ctx); setCurrentView('ai-chat'); }} onExplore={() => setCurrentView('community-feed')} />}
-          {currentView === 'ai-chat' && <AiChatScreen context={chatContext} onBack={goBack} onExplore={() => setCurrentView('community-feed')} onConsult={() => setCurrentView('user-consultation')} onSaveJournal={handleSaveJournal} />}
+          {currentView === 'ai-chat' && <AiChatScreen context={chatContext} onBack={goBack} onExplore={() => setCurrentView('community-feed')} onConsult={() => { setBookingType(chatContext === 'family' ? 'Family Guidance' : 'Individual Session'); setBookingStep('browse'); setCurrentView('user-consultation'); }} onSaveJournal={handleSaveJournal} />}
           {currentView === 'community-feed' && <CommunityFeedScreen onBack={goBack} onStartShare={() => { setChatContext('share'); setCurrentView('ai-chat'); }} />}
-          {currentView === 'user-journal' && !journalUnlocked && <PinGateScreen onUnlock={() => setJournalUnlocked(true)} onSkip={() => setJournalUnlocked(true)} onBack={goBack} />}
-          {currentView === 'user-journal' && journalUnlocked && <JournalScreen entries={journalEntries} onBack={goBack} />}
+          {currentView === 'user-journal' && (
+            journalUnlocked
+              ? <JournalScreen entries={journalEntries} onBack={goBack} />
+              : <JournalPinScreen onUnlock={() => setJournalUnlocked(true)} onSkip={() => setJournalUnlocked(true)} onBack={goBack} />
+          )}
           {currentView === 'login' && <LoginScreen onLogin={handleLogin} onBack={goBack} />}
           {currentView === 'queue' && <DashboardScreen onViewBrief={handleViewBrief} />}
           {currentView === 'schedule' && <ScheduleScreen />}
@@ -183,7 +184,127 @@ export default function App() {
             />
           )}
           {currentView === 'user-consultation' && (
-            <ConsultationBookingScreen chatContext={chatContext} onBack={goBack} onHome={() => navigateTab('user-home')} onExplore={() => navigateTab('community-feed')} />
+            <div className="flex flex-col h-full bg-brand-bg">
+              {/* Header */}
+              <div className="bg-brand-bg/90 backdrop-blur-md z-10 px-6 py-6 border-b border-brand-border sticky top-0">
+                <h1 className="font-serif text-2xl font-semibold text-brand-ink">Connect with a Professional</h1>
+                <p className="text-brand-ink/60 text-sm mt-1">Licensed professionals who understand your culture and context.</p>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6 pb-24 space-y-5">
+                {bookingStep === 'done' ? (
+                  <div className="flex flex-col items-center text-center mt-8">
+                    <div className="w-16 h-16 rounded-full bg-brand-green/10 flex items-center justify-center text-brand-green mb-4">
+                      <ShieldCheck size={32} />
+                    </div>
+                    <h2 className="font-serif text-2xl font-semibold text-brand-ink mb-2">Consultation Booked</h2>
+                    <p className="text-sm text-brand-ink/70 mb-1">Dr. Anjali Sharma</p>
+                    <p className="text-sm font-medium text-brand-rust mb-1">{bookingTime}</p>
+                    <p className="text-xs text-brand-ink/50 mb-6">{bookingType}</p>
+                    <p className="text-xs text-brand-ink/50 mb-8 max-w-[260px]">You'll receive preparation guidance before your session. Your Maan conversation summary will be shared with the professional (with your consent).</p>
+                    <button onClick={() => navigateTab('user-home')} className="w-full bg-brand-rust text-white rounded-2xl py-4 font-medium text-sm mb-3">Back to Home</button>
+                    <button onClick={() => setCurrentView('community-feed')} className="w-full bg-brand-surface border border-brand-border text-brand-ink rounded-2xl py-4 font-medium text-sm">Continue Exploring</button>
+                  </div>
+                ) : (
+                  <>
+                    {/* Professional Card */}
+                    <div className="bg-brand-surface rounded-[1.5rem] p-5 border border-brand-border shadow-sm">
+                      <div className="flex items-center gap-4 mb-4">
+                        <div className="w-14 h-14 rounded-full bg-brand-rust/10 flex items-center justify-center font-serif text-brand-rust text-lg font-semibold shrink-0">AS</div>
+                        <div className="flex-1">
+                          <h3 className="font-serif text-lg font-semibold text-brand-ink">Dr. Anjali Sharma</h3>
+                          <p className="text-xs text-brand-ink/60">Clinical Psychologist · Kathmandu</p>
+                          <div className="flex items-center gap-1 mt-1">
+                            <span className="text-brand-rust text-xs">★ 4.9</span>
+                            <span className="text-[10px] text-brand-ink/40">(124 sessions)</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {['Fluent Nepali', 'Family Systems', 'Intergenerational Trauma'].map(tag => (
+                          <span key={tag} className="text-[10px] font-medium bg-brand-green/10 text-brand-green px-2 py-1 rounded-full">{tag}</span>
+                        ))}
+                      </div>
+                      <p className="text-sm text-brand-ink/70 leading-relaxed italic">"Specializing in bridging the gap between traditional family expectations and modern mental health needs."</p>
+                    </div>
+
+                    {/* Choose Type */}
+                    <div>
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-brand-ink/40 mb-3">Session Type</h3>
+                      <div className="grid grid-cols-2 gap-3">
+                        <button
+                          onClick={() => setBookingType('Family Guidance')}
+                          className={`p-4 rounded-2xl border text-left transition-colors ${bookingType === 'Family Guidance' ? 'bg-brand-green/10 border-brand-green' : 'bg-brand-surface border-brand-border hover:bg-brand-surface-alt'}`}
+                        >
+                          <Users size={18} className={`${bookingType === 'Family Guidance' ? 'text-brand-green' : 'text-brand-ink/40'} mb-2`} />
+                          <p className="text-xs font-semibold text-brand-ink">Family Guidance</p>
+                          <p className="text-[10px] text-brand-ink/50 mt-0.5">For someone you care about</p>
+                        </button>
+                        <button
+                          onClick={() => setBookingType('Individual Session')}
+                          className={`p-4 rounded-2xl border text-left transition-colors ${bookingType === 'Individual Session' ? 'bg-brand-rust/10 border-brand-rust' : 'bg-brand-surface border-brand-border hover:bg-brand-surface-alt'}`}
+                        >
+                          <User size={18} className={`${bookingType === 'Individual Session' ? 'text-brand-rust' : 'text-brand-ink/40'} mb-2`} />
+                          <p className="text-xs font-semibold text-brand-ink">Individual Session</p>
+                          <p className="text-[10px] text-brand-ink/50 mt-0.5">For personal support</p>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Choose Time */}
+                    {bookingType && (
+                      <div>
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-brand-ink/40 mb-3">Available Times</h3>
+                        <div className="space-y-2">
+                          {['Tomorrow, 10:00 AM', 'Tomorrow, 2:00 PM', 'March 30, 11:00 AM', 'March 30, 4:00 PM'].map(slot => (
+                            <button
+                              key={slot}
+                              onClick={() => setBookingTime(slot)}
+                              className={`w-full p-4 rounded-2xl border text-left text-sm transition-colors ${bookingTime === slot ? 'bg-brand-rust/10 border-brand-rust text-brand-ink font-medium' : 'bg-brand-surface border-brand-border text-brand-ink/70 hover:bg-brand-surface-alt'}`}
+                            >
+                              <Calendar size={14} className="inline mr-2" />{slot}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Book Button */}
+                    {bookingType && bookingTime && (
+                      <div>
+                        <button
+                          onClick={() => setBookingStep('done')}
+                          className="w-full bg-brand-rust text-white rounded-2xl py-4 font-medium text-sm shadow-md hover:bg-brand-rust/90 transition-colors"
+                        >
+                          Book Consultation
+                        </button>
+                        <p className="text-[10px] text-brand-ink/40 text-center mt-3 leading-relaxed">
+                          Consultations are guidance sessions, not diagnostic appointments. NPR 500-1000 / $5-11 per session.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* What to Expect */}
+                    <div className="bg-brand-bg rounded-2xl p-4 border border-brand-border/50">
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-brand-ink/40 mb-3">What to Expect</h3>
+                      <div className="space-y-3">
+                        {[
+                          { icon: <MessageCircle size={14} />, text: 'Your Maan conversation summary is shared with your consent' },
+                          { icon: <Eye size={14} />, text: 'The professional reviews your context before the session' },
+                          { icon: <Activity size={14} />, text: 'Sessions are 30-45 minutes via video call' },
+                          { icon: <Lock size={14} />, text: 'Everything discussed is confidential' }
+                        ].map((item, i) => (
+                          <div key={i} className="flex items-start gap-3">
+                            <div className="text-brand-green mt-0.5 shrink-0">{item.icon}</div>
+                            <p className="text-xs text-brand-ink/60 leading-relaxed">{item.text}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
           )}
           {currentView === 'user-help' && <HelpScreen onBack={goBack} onHome={() => navigateTab('user-home')} />}
         </div>
@@ -213,7 +334,7 @@ export default function App() {
               <span className="text-[10px] font-medium mt-1">Journal</span>
             </button>
             <button 
-              onClick={() => navigateTab('user-consultation')}
+              onClick={() => { setBookingStep('browse'); setBookingType(null); setBookingTime(null); navigateTab('user-consultation'); }}
               className={`flex flex-col items-center transition-colors ${currentView === 'user-consultation' ? 'text-brand-rust' : 'text-brand-ink/40 hover:text-brand-ink'}`}
             >
               <Calendar size={24} strokeWidth={currentView === 'user-consultation' ? 2.5 : 2} />
@@ -549,218 +670,86 @@ function LoginScreen({ onLogin, onBack }: { onLogin: () => void, onBack: () => v
   );
 }
 
-function PinGateScreen({ onUnlock, onSkip, onBack }: { onUnlock: () => void, onSkip: () => void, onBack: () => void }) {
-  const [pinInput, setPinInput] = useState('');
-  const [pinError, setPinError] = useState(false);
+function JournalPinScreen({ onUnlock, onSkip, onBack }: { onUnlock: () => void, onSkip: () => void, onBack: () => void }) {
+  const [pin, setPin] = useState('');
+  const [error, setError] = useState(false);
   const DEMO_PIN = '1234';
 
-  const handleKey = (digit: string) => {
-    if (pinInput.length >= 4) return;
-    const next = pinInput + digit;
-    setPinInput(next);
+  const handleDigit = (d: string) => {
+    if (pin.length >= 4) return;
+    const next = pin + d;
+    setPin(next);
+    setError(false);
     if (next.length === 4) {
       if (next === DEMO_PIN) {
         onUnlock();
       } else {
-        setPinError(true);
-        setTimeout(() => { setPinError(false); setPinInput(''); }, 700);
+        setError(true);
+        setTimeout(() => { setPin(''); setError(false); }, 1000);
       }
     }
   };
 
   const handleBackspace = () => {
-    setPinInput(prev => prev.slice(0, -1));
-    setPinError(false);
+    setPin(prev => prev.slice(0, -1));
+    setError(false);
   };
 
-  const keys = ['1','2','3','4','5','6','7','8','9','','0','⌫'];
-
   return (
-    <div className="flex flex-col h-full bg-brand-bg items-center">
-      <div className="w-full px-6 py-6 flex items-center gap-4 border-b border-brand-border">
-        <button onClick={onBack} className="w-10 h-10 rounded-full bg-brand-surface flex items-center justify-center text-brand-ink border border-brand-border hover:bg-brand-surface-alt transition-colors">
-          <ChevronLeft size={20} />
-        </button>
-        <h1 className="font-serif text-2xl font-semibold text-brand-ink">Private Journal</h1>
+    <div className="flex flex-col h-full bg-brand-bg items-center justify-center px-8 relative">
+      <button
+        onClick={onBack}
+        className="absolute top-6 left-6 w-10 h-10 rounded-full bg-brand-surface flex items-center justify-center text-brand-ink border border-brand-border hover:bg-brand-surface-alt transition-colors"
+      >
+        <ChevronLeft size={20} />
+      </button>
+
+      <div className="w-16 h-16 rounded-full bg-brand-rust/10 flex items-center justify-center text-brand-rust mb-6">
+        <Lock size={28} />
       </div>
 
-      <div className="flex-1 flex flex-col items-center justify-center px-8 w-full">
-        <div className="w-16 h-16 rounded-full bg-brand-surface border border-brand-border flex items-center justify-center mb-6 shadow-sm">
-          <Lock size={28} className="text-brand-rust" />
-        </div>
-        <p className="font-serif text-xl font-semibold text-brand-ink mb-2 text-center">Your reflections are protected.</p>
-        <p className="text-sm text-brand-ink/60 text-center mb-8">Enter your PIN to continue.</p>
+      <h2 className="font-serif text-2xl font-semibold text-brand-ink mb-2">Private Journal</h2>
+      <p className="text-sm text-brand-ink/60 text-center mb-2">Your reflections are protected.</p>
+      <p className="text-[10px] text-brand-ink/40 text-center mb-8 max-w-[240px] leading-relaxed">
+        In homes where phones are shared, your privacy matters. No one — not even Sahara — can read your journal without your PIN.
+      </p>
 
-        {/* PIN dots */}
-        <div className={`flex gap-4 mb-8 ${pinError ? 'shake' : ''}`}>
-          {[0,1,2,3].map(i => (
-            <div key={i} className={`w-4 h-4 rounded-full border-2 transition-colors ${i < pinInput.length ? 'bg-brand-rust border-brand-rust' : 'border-brand-border bg-transparent'}`} />
-          ))}
-        </div>
-        {pinError && <p className="text-xs text-red-500 mb-4 -mt-4">Incorrect PIN. Try again.</p>}
-
-        {/* Keypad */}
-        <div className="grid grid-cols-3 gap-3 w-full max-w-[240px]">
-          {keys.map((key, i) => (
-            key === '' ? <div key={i} /> :
-            key === '⌫' ? (
-              <button key={i} onClick={handleBackspace} className="w-full aspect-square rounded-full bg-brand-surface-alt border border-brand-border text-brand-ink font-serif text-xl flex items-center justify-center hover:bg-brand-border transition-colors">
-                ⌫
-              </button>
-            ) : (
-              <button key={i} onClick={() => handleKey(key)} className="w-full aspect-square rounded-full bg-brand-surface border border-brand-border text-brand-ink font-serif text-xl flex items-center justify-center hover:bg-brand-surface-alt transition-colors shadow-sm">
-                {key}
-              </button>
-            )
-          ))}
-        </div>
-
-        <button onClick={onSkip} className="mt-6 text-xs text-brand-ink/40 hover:text-brand-ink/60 transition-colors">
-          Set up later — skip for now
-        </button>
+      {/* PIN Dots */}
+      <div className={`flex gap-4 mb-8 ${error ? 'animate-[shake_0.4s_ease-in-out]' : ''}`}>
+        {[0, 1, 2, 3].map(i => (
+          <div
+            key={i}
+            className={`w-4 h-4 rounded-full transition-colors ${
+              i < pin.length ? 'bg-brand-rust' : 'border-2 border-brand-border'
+            }`}
+          />
+        ))}
       </div>
 
-      <div className="px-8 pb-8 w-full">
-        <div className="bg-brand-surface rounded-2xl p-4 border border-brand-border space-y-2">
-          {['Your journal entries stay on your device', 'No one — not even Sahara — can read them without your PIN', 'In homes where phones are shared, your privacy matters'].map((t, i) => (
-            <p key={i} className="text-xs text-brand-ink/60 flex items-start gap-2"><span className="text-brand-green mt-0.5">✓</span>{t}</p>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
+      {error && <p className="text-xs text-red-500 mb-4">Incorrect PIN. Try again.</p>}
 
-function ConsultationBookingScreen({ chatContext, onBack, onHome, onExplore }: { chatContext: string, onBack: () => void, onHome: () => void, onExplore: () => void }) {
-  const [sessionType, setSessionType] = useState<'family' | 'individual'>(chatContext === 'family' ? 'family' : 'individual');
-  const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
-  const [confirmed, setConfirmed] = useState(false);
-
-  const slots = ['Tomorrow, 10:00 AM', 'Tomorrow, 2:00 PM', 'March 30, 11:00 AM', 'March 30, 4:00 PM'];
-
-  if (confirmed && selectedSlot) {
-    return (
-      <div className="flex flex-col h-full bg-brand-bg items-center justify-center px-8 text-center">
-        <div className="w-16 h-16 rounded-full bg-brand-green/10 flex items-center justify-center mb-6">
-          <ShieldCheck size={32} className="text-brand-green" />
-        </div>
-        <h2 className="font-serif text-2xl font-semibold text-brand-ink mb-2">Consultation Booked</h2>
-        <p className="text-brand-ink/60 text-sm mb-6">with Dr. Anjali Sharma</p>
-        <div className="bg-brand-surface rounded-2xl p-5 border border-brand-border w-full mb-6 text-left space-y-3">
-          <div>
-            <p className="text-[10px] font-semibold text-brand-ink/40 uppercase tracking-wider mb-1">Session Time</p>
-            <p className="text-sm font-medium text-brand-ink">{selectedSlot}</p>
-          </div>
-          <div>
-            <p className="text-[10px] font-semibold text-brand-ink/40 uppercase tracking-wider mb-1">Session Type</p>
-            <p className="text-sm font-medium text-brand-ink">{sessionType === 'family' ? 'Family Guidance' : 'Individual Session'}</p>
-          </div>
-        </div>
-        <p className="text-xs text-brand-ink/50 mb-8">You'll receive preparation guidance before your session.</p>
-        <div className="flex gap-3 w-full">
-          <button onClick={onHome} className="flex-1 py-3 rounded-2xl border border-brand-border text-brand-ink text-sm font-medium hover:bg-brand-surface-alt transition-colors">Back to Home</button>
-          <button onClick={onExplore} className="flex-1 py-3 rounded-2xl bg-brand-rust text-white text-sm font-medium hover:bg-brand-rust/90 transition-colors">Continue Exploring</button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-col h-full bg-brand-bg">
-      <div className="px-6 py-6 flex items-center gap-4 border-b border-brand-border">
-        <button onClick={onBack} className="w-10 h-10 rounded-full bg-brand-surface flex items-center justify-center text-brand-ink border border-brand-border hover:bg-brand-surface-alt transition-colors shrink-0">
-          <ChevronLeft size={20} />
-        </button>
-        <div>
-          <h1 className="font-serif text-2xl font-semibold text-brand-ink">Connect with a Professional</h1>
-          <p className="text-xs text-brand-ink/60 mt-0.5">Licensed professionals who understand your culture and context.</p>
-        </div>
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-6 space-y-5 pb-6">
-        {/* Professional Card */}
-        <div className="bg-brand-surface rounded-[1.5rem] p-5 border border-brand-border shadow-sm">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="w-14 h-14 rounded-full bg-brand-rust/10 flex items-center justify-center font-serif text-xl font-semibold text-brand-rust shrink-0">AS</div>
-            <div>
-              <h3 className="font-serif text-lg font-semibold text-brand-ink">Dr. Anjali Sharma</h3>
-              <p className="text-xs text-brand-ink/60">Clinical Psychologist · Kathmandu</p>
-              <p className="text-xs text-brand-green font-medium mt-0.5">★ 4.9 · 124 sessions</p>
-            </div>
-          </div>
-          <p className="text-sm text-brand-ink/70 leading-relaxed mb-4">Specializing in bridging the gap between traditional family expectations and modern mental health needs.</p>
-          <div className="flex flex-wrap gap-2">
-            {['Fluent Nepali', 'Family Systems', 'Intergenerational Trauma'].map(tag => (
-              <span key={tag} className="text-[10px] font-medium bg-brand-bg border border-brand-border px-2 py-1 rounded-full text-brand-ink/70">{tag}</span>
-            ))}
-          </div>
-        </div>
-
-        {/* Step 1: Session Type */}
-        <div>
-          <p className="text-xs font-semibold text-brand-ink/50 uppercase tracking-wider mb-3">1. Choose Session Type</p>
-          <div className="flex gap-3">
-            <button
-              onClick={() => setSessionType('family')}
-              className={`flex-1 py-3 px-4 rounded-2xl border text-sm font-medium transition-colors ${sessionType === 'family' ? 'bg-brand-green-light border-brand-green text-[#3A4A36]' : 'bg-brand-surface border-brand-border text-brand-ink/70 hover:bg-brand-surface-alt'}`}
-            >
-              <Users size={14} className="inline mr-1.5" />Family Guidance
+      {/* Keypad */}
+      <div className="grid grid-cols-3 gap-3 mb-6">
+        {['1','2','3','4','5','6','7','8','9','','0','←'].map((key) => {
+          if (key === '') return <div key="empty" />;
+          if (key === '←') return (
+            <button key="back" onClick={handleBackspace} className="w-16 h-16 rounded-full bg-brand-surface border border-brand-border flex items-center justify-center text-brand-ink text-xl hover:bg-brand-surface-alt transition-colors">
+              ←
             </button>
-            <button
-              onClick={() => setSessionType('individual')}
-              className={`flex-1 py-3 px-4 rounded-2xl border text-sm font-medium transition-colors ${sessionType === 'individual' ? 'bg-brand-rust-light border-brand-rust text-[#5A3A30]' : 'bg-brand-surface border-brand-border text-brand-ink/70 hover:bg-brand-surface-alt'}`}
-            >
-              <User size={14} className="inline mr-1.5" />Individual
+          );
+          return (
+            <button key={key} onClick={() => handleDigit(key)} className="w-16 h-16 rounded-full bg-brand-surface border border-brand-border flex items-center justify-center text-brand-ink font-serif text-xl hover:bg-brand-surface-alt transition-colors">
+              {key}
             </button>
-          </div>
-        </div>
-
-        {/* Step 2: Time Slot */}
-        <div>
-          <p className="text-xs font-semibold text-brand-ink/50 uppercase tracking-wider mb-3">2. Choose a Time</p>
-          <div className="space-y-2">
-            {slots.map(slot => (
-              <button
-                key={slot}
-                onClick={() => setSelectedSlot(slot)}
-                className={`w-full py-3 px-4 rounded-2xl border text-sm font-medium text-left transition-colors ${selectedSlot === slot ? 'bg-brand-rust/10 border-brand-rust text-brand-rust' : 'bg-brand-surface border-brand-border text-brand-ink hover:bg-brand-surface-alt'}`}
-              >
-                {slot}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* What to Expect */}
-        <div className="bg-brand-bg rounded-2xl p-4 border border-brand-border space-y-2">
-          <p className="text-xs font-semibold text-brand-ink/50 uppercase tracking-wider mb-2">What to Expect</p>
-          {[
-            'Your Maan conversation summary will be shared with the professional (with your consent)',
-            'The professional reviews your context before the session',
-            'Sessions are 30–45 minutes via video call',
-            'Everything discussed is confidential'
-          ].map((item, i) => (
-            <p key={i} className="text-xs text-brand-ink/70 flex items-start gap-2"><span className="text-brand-green mt-0.5 shrink-0">✓</span>{item}</p>
-          ))}
-        </div>
-
-        {/* Confirm Button */}
-        <div>
-          <button
-            onClick={() => { if (selectedSlot) setConfirmed(true); }}
-            disabled={!selectedSlot}
-            className="w-full py-4 rounded-2xl bg-brand-rust text-white font-semibold text-sm hover:bg-brand-rust/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            Book Consultation
-          </button>
-          <p className="text-[10px] text-brand-ink/40 text-center mt-2 leading-relaxed">
-            Consultations are guidance sessions, not diagnostic appointments. ₹500–1000 / $5–11 per session.
-          </p>
-          {!chatContext.includes('family') && !chatContext.includes('self') && (
-            <p className="text-xs text-brand-ink/50 text-center mt-2">Consider talking to Maan first to help organize your thoughts.</p>
-          )}
-        </div>
+          );
+        })}
       </div>
+
+      <button onClick={onSkip} className="text-xs text-brand-ink/40 hover:text-brand-ink/60 transition-colors">
+        Set up later →
+      </button>
+
+      <p className="text-[10px] text-brand-ink/30 mt-4">Demo PIN: 1234</p>
     </div>
   );
 }
@@ -820,22 +809,35 @@ function JournalScreen({ entries, onBack }: { entries: any[], onBack: () => void
 
 function CommunityFeedScreen({ onBack, onStartShare }: { onBack: () => void, onStartShare: () => void }) {
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedStory, setSelectedStory] = useState<any | null>(null);
+  const [activeFilter, setActiveFilter] = useState('All');
+  const filters = ['All', 'Social Withdrawal', 'Academic Pressure', 'Stigma & Resistance', 'Social Isolation'];
 
   const handleInteract = () => {
     setShowAuthPrompt(true);
     setTimeout(() => setShowAuthPrompt(false), 3000);
   };
 
-  const FEED_POSTS: any[] = [
+  const FEED_POSTS: Array<{
+    id: number | string;
+    type: 'story' | 'expert';
+    author?: string;
+    time?: string;
+    tag: string;
+    aiSummary?: string;
+    content: string;
+    meTooCount?: number;
+    proResponses?: number;
+    name?: string;
+    credential?: string;
+    verified?: boolean;
+  }> = [
     {
       id: 1,
       type: 'story',
       author: "Anonymous Sister",
       time: "2 hours ago",
       tag: "Social Withdrawal",
-      aiSummary: "Social withdrawal, irregular sleep, work absence — 3 weeks. Family perceives as laziness. Common pattern in 124 families on Sahara.",
+      aiSummary: "3-week social withdrawal. Parents misread as laziness. Seeking advice on family communication gap.",
       content: "My brother hasn't left his room in weeks. My parents keep telling him to 'just go outside and get fresh air' and think he is just being lazy. I know it's something deeper but I don't know how to bridge the gap between them.",
       meTooCount: 124,
       proResponses: 2
@@ -846,8 +848,8 @@ function CommunityFeedScreen({ onBack, onStartShare }: { onBack: () => void, onS
       name: "Dr. Asha S.",
       credential: "Psychiatrist, Kathmandu",
       verified: true,
-      content: "When a family member says 'he's just lazy,' that's often the first sign someone needs gentle support. Starting with a conversation — not a confrontation — makes a real difference.",
-      tag: "Social Withdrawal"
+      tag: "Social Withdrawal",
+      content: "When a family member says 'he's just lazy,' that's often the first sign someone needs gentle support. Starting with a conversation — not a confrontation — makes a real difference."
     },
     {
       id: 2,
@@ -855,7 +857,7 @@ function CommunityFeedScreen({ onBack, onStartShare }: { onBack: () => void, onS
       author: "Anonymous Son",
       time: "5 hours ago",
       tag: "Academic Pressure",
-      aiSummary: "Severe pressure to succeed. Fears family will perceive therapy as failure. Seeking strategies to initiate conversation.",
+      aiSummary: "Severe pressure to succeed. Fears therapy = parental failure. Looking for conversation starters.",
       content: "The pressure to succeed and provide is crushing me. If I tell my family I need therapy, they will think they failed as parents or that I am broken. How do you start this conversation?",
       meTooCount: 89,
       proResponses: 1
@@ -866,10 +868,19 @@ function CommunityFeedScreen({ onBack, onStartShare }: { onBack: () => void, onS
       author: "Anonymous Mother",
       time: "1 day ago",
       tag: "Stigma & Resistance",
-      aiSummary: "Husband resistant to counseling. Cites 'airing dirty laundry' stigma. Mother feels isolated and stuck.",
+      aiSummary: "Husband resistant to counseling due to stigma. Mother feels stuck between child's need and spouse's resistance.",
       content: "I suggested to my husband that we see a counselor for our daughter. He got very angry and said 'we don't air our dirty laundry to strangers'. I feel so stuck.",
       meTooCount: 210,
       proResponses: 4
+    },
+    {
+      id: 'expert-2',
+      type: 'expert',
+      name: "Dr. Prabhat K.",
+      credential: "Keynote Speaker, Mental Health Advocate",
+      verified: true,
+      tag: "Stigma & Resistance",
+      content: "Stigma is the single largest barrier to mental health care in South Asia. But every family that starts a conversation — even an imperfect one — breaks the cycle for the next generation."
     },
     {
       id: 4,
@@ -881,59 +892,25 @@ function CommunityFeedScreen({ onBack, onStartShare }: { onBack: () => void, onS
       content: "My mother hasn't left the house in two months. She says she's fine but I can see it in her eyes. How did others approach this conversation?",
       meTooCount: 67,
       proResponses: 1
+    },
+    {
+      id: 5,
+      type: 'story',
+      author: "Anonymous Student",
+      time: "3 days ago",
+      tag: "Academic Pressure",
+      aiSummary: "High-achieving student experiencing burnout. Afraid to ask for help due to family's sacrifice narrative.",
+      content: "My parents sacrificed everything so I could study abroad. Now I can barely get out of bed. How do I tell them I'm struggling without making them feel like it was all for nothing?",
+      meTooCount: 156,
+      proResponses: 3
     }
   ];
-
-  // Story Detail Overlay
-  if (selectedStory) {
-    return (
-      <div className="flex flex-col h-full bg-brand-bg">
-        <div className="px-6 py-6 flex items-center gap-4 border-b border-brand-border sticky top-0 bg-brand-bg/90 backdrop-blur-md z-10">
-          <button onClick={() => setSelectedStory(null)} className="w-10 h-10 rounded-full bg-brand-surface flex items-center justify-center text-brand-ink border border-brand-border hover:bg-brand-surface-alt transition-colors">
-            <ChevronLeft size={20} />
-          </button>
-          <span className="text-[10px] font-medium uppercase tracking-wider text-brand-ink/50 bg-brand-bg border border-brand-border px-2 py-1 rounded-md">{selectedStory.tag}</span>
-        </div>
-        <div className="flex-1 overflow-y-auto p-6 space-y-5 pb-8">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 rounded-full bg-brand-rust/10 flex items-center justify-center"><Users size={14} className="text-brand-rust" /></div>
-            <div>
-              <p className="text-xs font-semibold text-brand-ink">{selectedStory.author}</p>
-              <p className="text-[10px] text-brand-ink/40">{selectedStory.time}</p>
-            </div>
-          </div>
-          <p className="text-base text-brand-ink/80 leading-relaxed italic">"{selectedStory.content}"</p>
-          <div className="bg-brand-bg rounded-xl p-4 border border-brand-border/50">
-            <div className="flex items-center gap-1.5 mb-2 text-brand-rust">
-              <Sparkles size={14} />
-              <span className="text-[10px] font-bold uppercase tracking-wider">AI-Organized Summary</span>
-            </div>
-            <p className="text-sm text-brand-ink/90 font-medium leading-relaxed">{selectedStory.aiSummary}</p>
-          </div>
-          <div className="flex items-center justify-between pt-4 border-t border-brand-border/60">
-            <button onClick={handleInteract} className="flex items-center gap-1.5 text-brand-ink/50 hover:text-brand-rust transition-colors">
-              <Heart size={16} /><span className="text-xs font-medium">{selectedStory.meTooCount} Ma Pani</span>
-            </button>
-            <button onClick={handleInteract} className="flex items-center gap-1.5 text-brand-green bg-brand-green-light/30 px-3 py-1.5 rounded-full">
-              <ShieldCheck size={14} /><span className="text-xs font-medium">{selectedStory.proResponses} Pro Responses</span>
-            </button>
-          </div>
-          <div className="bg-brand-surface rounded-2xl p-4 border border-brand-border">
-            <p className="text-xs font-semibold text-brand-ink/50 uppercase tracking-wider mb-2">Does this resonate?</p>
-            <button onClick={onStartShare} className="w-full py-3 rounded-xl bg-brand-rust text-white text-sm font-medium hover:bg-brand-rust/90 transition-colors">
-              Share your experience with Maan
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-col h-full bg-brand-bg relative">
       {/* Auth Prompt Toast */}
       {showAuthPrompt && (
-        <div className="absolute top-24 left-4 right-4 bg-brand-ink text-white p-4 rounded-2xl shadow-xl z-50 flex items-start gap-3">
+        <div className="absolute top-20 left-4 right-4 bg-brand-ink text-white p-4 rounded-2xl shadow-xl z-50 flex items-start gap-3">
           <Lock size={20} className="text-brand-rust shrink-0 mt-0.5" />
           <div>
             <p className="font-semibold text-sm mb-1">Create an account to interact</p>
@@ -952,25 +929,35 @@ function CommunityFeedScreen({ onBack, onStartShare }: { onBack: () => void, onS
         </div>
         <h1 className="font-serif text-3xl font-semibold text-brand-ink mb-1">Chautari / Ma Pani</h1>
         <p className="text-brand-ink/60 text-sm">"Me Too" — You are not alone in this.</p>
-        {/* Search Bar */}
-        <div className="mt-4 flex items-center gap-2 bg-brand-surface border border-brand-border rounded-2xl px-4 py-2.5">
-          <Eye size={16} className="text-brand-ink/30 shrink-0" />
-          <input
-            type="text"
-            placeholder="Search stories..."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            className="flex-1 bg-transparent text-sm text-brand-ink placeholder:text-brand-ink/40 focus:outline-none"
-          />
-        </div>
       </div>
 
       {/* Filters */}
-      <div className="px-6 py-3 flex gap-2 overflow-x-auto scrollbar-hide border-b border-brand-border/50">
-        <button className="px-4 py-2 rounded-full bg-brand-ink text-white text-xs font-medium whitespace-nowrap shadow-sm">All Stories</button>
-        <button className="px-4 py-2 rounded-full bg-brand-surface border border-brand-border text-brand-ink text-xs font-medium whitespace-nowrap hover:bg-brand-surface-alt transition-colors">Family Dynamics</button>
-        <button className="px-4 py-2 rounded-full bg-brand-surface border border-brand-border text-brand-ink text-xs font-medium whitespace-nowrap hover:bg-brand-surface-alt transition-colors">Academic Pressure</button>
-        <button className="px-4 py-2 rounded-full bg-brand-surface border border-brand-border text-brand-ink text-xs font-medium whitespace-nowrap hover:bg-brand-surface-alt transition-colors">Social Isolation</button>
+      <div className="px-6 py-4 flex gap-2 overflow-x-auto scrollbar-hide border-b border-brand-border/50">
+        {filters.map(f => (
+          <button
+            key={f}
+            onClick={() => setActiveFilter(f)}
+            className={`px-4 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+              activeFilter === f
+                ? 'bg-brand-ink text-white shadow-sm'
+                : 'bg-brand-surface border border-brand-border text-brand-ink hover:bg-brand-surface-alt'
+            }`}
+          >
+            {f === 'All' ? 'All Stories' : f}
+          </button>
+        ))}
+      </div>
+
+      {/* Search */}
+      <div className="px-6 pt-4">
+        <div className="bg-brand-surface rounded-2xl p-1 border border-brand-border shadow-sm flex items-center px-3">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-brand-ink/40 mr-2 shrink-0"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input
+            type="text"
+            placeholder="Search stories and insights..."
+            className="w-full bg-transparent py-3 text-sm text-brand-ink placeholder:text-brand-ink/40 focus:outline-none"
+          />
+        </div>
       </div>
 
       {/* Feed */}
@@ -987,13 +974,15 @@ function CommunityFeedScreen({ onBack, onStartShare }: { onBack: () => void, onS
           <span className="text-xs font-medium text-brand-rust">Share →</span>
         </div>
 
-        {FEED_POSTS.map((post) => {
+        {/* Posts */}
+        {FEED_POSTS.filter(p => activeFilter === 'All' || p.tag === activeFilter).map((post) => {
+          // Expert card
           if (post.type === 'expert') {
             return (
               <div key={post.id} className="bg-brand-surface rounded-[1.5rem] p-5 border border-brand-border shadow-sm border-l-4 border-l-brand-green">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-full bg-brand-green/10 flex items-center justify-center font-serif text-brand-green text-sm font-semibold shrink-0">
-                    {post.name.split(' ').map((n: string) => n[0]).join('')}
+                  <div className="w-10 h-10 rounded-full bg-brand-green/10 flex items-center justify-center font-serif text-brand-green text-sm font-semibold">
+                    {post.name!.split(' ').map(n => n[0]).join('')}
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-brand-ink">{post.name} <span className="text-brand-green text-xs">✓ Verified</span></p>
@@ -1001,10 +990,14 @@ function CommunityFeedScreen({ onBack, onStartShare }: { onBack: () => void, onS
                   </div>
                 </div>
                 <p className="text-sm text-brand-ink/80 leading-relaxed">{post.content}</p>
+                <div className="mt-3">
+                  <span className="text-[10px] font-medium uppercase tracking-wider text-brand-ink/40 bg-brand-bg px-2 py-1 rounded-md border border-brand-border/50">{post.tag}</span>
+                </div>
               </div>
             );
           }
 
+          // Story card — human story FIRST, AI summary SECOND
           return (
             <div key={post.id} className="bg-brand-surface rounded-[1.5rem] p-5 border border-brand-border shadow-sm">
               <div className="flex justify-between items-start mb-4">
@@ -1022,27 +1015,36 @@ function CommunityFeedScreen({ onBack, onStartShare }: { onBack: () => void, onS
                 </span>
               </div>
 
-              {/* Story text first (G8) */}
+              {/* Human story FIRST */}
               <div className="px-1 mb-4">
-                <p className="text-sm text-brand-ink/70 leading-relaxed italic line-clamp-2">"{post.content}"</p>
-                <button onClick={() => setSelectedStory(post)} className="text-xs font-medium text-brand-rust mt-1 hover:underline">Read full story</button>
+                <p className="text-sm text-brand-ink/70 leading-relaxed">
+                  "{post.content}"
+                </p>
               </div>
 
-              {/* AI Summary below story (G8) */}
-              <div className="bg-brand-bg rounded-xl p-4 mb-4 border border-brand-border/50">
-                <div className="flex items-center gap-1.5 mb-2 text-brand-rust">
-                  <Sparkles size={14} />
-                  <span className="text-[10px] font-bold uppercase tracking-wider">AI-Organized Summary</span>
+              {/* AI Summary SECOND */}
+              <div className="bg-brand-bg rounded-xl p-3 mb-4 border border-brand-border/50">
+                <div className="flex items-center gap-1.5 mb-1.5 text-brand-rust">
+                  <Sparkles size={12} />
+                  <span className="text-[9px] font-bold uppercase tracking-wider">AI-Organized Pattern</span>
                 </div>
-                <p className="text-sm text-brand-ink/90 font-medium leading-relaxed">{post.aiSummary}</p>
+                <p className="text-xs text-brand-ink/70 leading-relaxed">
+                  {post.aiSummary}
+                </p>
               </div>
 
               <div className="flex items-center justify-between pt-4 border-t border-brand-border/60">
-                <button onClick={handleInteract} className="flex items-center gap-1.5 text-brand-ink/50 hover:text-brand-rust transition-colors">
+                <button
+                  onClick={handleInteract}
+                  className="flex items-center gap-1.5 text-brand-ink/50 hover:text-brand-rust transition-colors"
+                >
                   <Heart size={16} />
                   <span className="text-xs font-medium">{post.meTooCount} Ma Pani</span>
                 </button>
-                <button onClick={handleInteract} className="flex items-center gap-1.5 text-brand-green hover:text-brand-green/80 transition-colors bg-brand-green-light/30 px-3 py-1.5 rounded-full">
+                <button
+                  onClick={handleInteract}
+                  className="flex items-center gap-1.5 text-brand-green hover:text-brand-green/80 transition-colors bg-brand-green/10 px-3 py-1.5 rounded-full"
+                >
                   <ShieldCheck size={14} />
                   <span className="text-xs font-medium">{post.proResponses} Pro Responses</span>
                 </button>
@@ -1051,27 +1053,19 @@ function CommunityFeedScreen({ onBack, onStartShare }: { onBack: () => void, onS
           );
         })}
       </div>
-
-      {/* Floating Action Button */}
-      <button
-        onClick={onStartShare}
-        className="absolute bottom-4 right-6 w-14 h-14 bg-brand-rust text-white rounded-full shadow-lg flex items-center justify-center hover:bg-brand-rust/90 transition-colors z-20"
-      >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-      </button>
     </div>
   );
 }
 
 function AiChatScreen({ context, onBack, onExplore, onConsult, onSaveJournal }: { context: string, onBack: () => void, onExplore: () => void, onConsult: () => void, onSaveJournal: (summary: string, mood: string, techniques: string[]) => void }) {
-  const getInitialMessage = (ctx: string) => {
-    if (ctx === 'family') return "Namaste, sathi\n\nIt takes courage to seek understanding for someone you care about. You are not alone in this — many families have walked this path. What have you been noticing?";
-    if (ctx === 'share') return "Namaste, sathi\n\nThank you for wanting to share your experience. Your story could help someone going through the same thing. Take your time — just start anywhere.";
-    return "Namaste, sathi\n\nSomething brought you here today. You do not have to explain it perfectly — just start anywhere.";
+  const greetings: Record<string, string> = {
+    family: "Namaste, sathi\n\nIt takes courage to seek understanding for someone you care about. You do not need all the answers — just start by sharing what you have noticed.",
+    self: "Namaste, sathi\n\nSomething brought you here today. You do not have to explain it perfectly — just start anywhere.",
+    share: "Namaste, sathi\n\nYour experience matters — and sharing it could help someone who feels alone right now. Tell me what has been on your mind, in your own words."
   };
 
   const [messages, setMessages] = useState<{role: 'ai' | 'user' | 'action', text?: string, actions?: any[]}[]>([
-    { role: 'ai', text: getInitialMessage(context) }
+    { role: 'ai', text: greetings[context] || greetings.self }
   ]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -1217,22 +1211,27 @@ function AiChatScreen({ context, onBack, onExplore, onConsult, onSaveJournal }: 
     }
   };
 
-  const initialPrompts = context === 'family' ? [
-    "My brother has been withdrawing lately",
-    "I don't know how to talk to my family about this",
-    "My parents think it's not serious, but I'm worried",
-    "How do I bring up mental health without stigma?"
-  ] : context === 'share' ? [
-    "I've been through something I want to share",
-    "My family didn't understand what I was going through",
-    "I found something that helped me cope",
-    "I want to help others who feel like I did"
-  ] : [
-    "I feel empty but I do not know why",
-    "I smile on the outside but inside I am exhausted",
-    "I cannot sleep. My chest feels heavy every night.",
-    "I do not know what I am doing with my life"
-  ];
+  const promptsByContext: Record<string, string[]> = {
+    family: [
+      "My brother has been withdrawing from everyone lately",
+      "I don't know how to talk to my family about this",
+      "My parent seems different and I am worried",
+      "Someone I love is struggling but won't accept help"
+    ],
+    self: [
+      "I feel empty but I do not know why",
+      "I smile on the outside but inside I am exhausted",
+      "I cannot sleep. My chest feels heavy every night.",
+      "I do not know what I am doing with my life"
+    ],
+    share: [
+      "I went through something similar and want others to know they're not alone",
+      "Our family found a way through — maybe it can help someone",
+      "I wish someone had told me this when I was struggling",
+      "Here is what helped me when I did not know where to turn"
+    ]
+  };
+  const initialPrompts = promptsByContext[context] || promptsByContext.self;
 
   return (
     <div className="flex flex-col h-full bg-brand-bg relative">
@@ -1261,10 +1260,16 @@ function AiChatScreen({ context, onBack, onExplore, onConsult, onSaveJournal }: 
             <div className="w-16 h-16 bg-brand-rust/80 text-white rounded-full flex items-center justify-center font-serif text-2xl mb-4 shadow-sm">
               म
             </div>
-            <p className="text-brand-green text-xs font-medium mb-2">{context === 'family' ? 'Supporting someone I love' : context === 'share' ? 'Sharing my experience' : 'Understanding myself'}</p>
+            <p className="text-brand-green text-xs font-medium mb-2">
+              {context === 'family' ? 'Caring for someone' : context === 'share' ? 'Sharing your experience' : 'Understanding myself'}
+            </p>
             <h2 className="font-serif text-2xl font-semibold text-brand-ink mb-2">Namaste, sathi</h2>
             <p className="text-sm text-brand-ink/70 max-w-[260px]">
-              Something brought you here today. You do not have to explain it perfectly — just start anywhere.
+              {context === 'family'
+                ? 'It takes courage to seek understanding for someone you care about. Just start by sharing what you have noticed.'
+                : context === 'share'
+                ? 'Your experience matters — sharing it could help someone who feels alone right now.'
+                : 'Something brought you here today. You do not have to explain it perfectly — just start anywhere.'}
             </p>
             <p className="text-brand-ink/40 mt-2 max-w-[260px]" style={{ fontSize: '10px' }}>
               Maan helps organize your thoughts — it does not diagnose or replace professional care.
