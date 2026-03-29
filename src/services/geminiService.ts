@@ -91,16 +91,30 @@ After a few exchanges, you may suggest they view community stories or talk to a 
       parts: [{ text: msg.text }]
     }));
 
-    const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash-lite",
-      contents: contents,
-      config: {
-        systemInstruction,
-        temperature: 0.7,
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: systemInstruction }] },
+          contents,
+          generationConfig: { temperature: 0.7 },
+        }),
       }
-    });
+    );
 
-    return response.text;
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      console.error("[Maan] Gemini API error:", response.status, err);
+      return getFallbackChatResponse(messages.length, context);
+    }
+
+    const data = await response.json();
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) return getFallbackChatResponse(messages.length, context);
+    return text;
+
   } catch (error) {
     console.error("Error generating AI response:", error);
     return getFallbackChatResponse(messages.length, context);
