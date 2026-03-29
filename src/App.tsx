@@ -293,6 +293,14 @@ export default function App() {
 
   return (
     <div className="min-h-[100dvh] flex items-center justify-center sm:p-4 md:p-8 overflow-hidden">
+      {/* Persistent theme toggle — always accessible on every screen */}
+      <button
+        onClick={() => setIsDark(!isDark)}
+        className="fixed top-4 right-4 z-[200] w-8 h-8 rounded-full bg-brand-surface-alt border border-brand-border flex items-center justify-center text-brand-ink/60 hover:text-brand-ink transition-colors shadow-md"
+        aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+      >
+        {isDark ? <Sun size={14} /> : <Moon size={14} />}
+      </button>
       {/* Mobile Shell Container */}
       <div className="w-full h-[100dvh] max-w-md sm:h-[844px] sm:max-h-[min(90vh,844px)] sm:w-[390px] sm:min-w-[390px] bg-brand-bg sm:rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col relative sm:border-[8px] sm:border-white shrink-0">
         
@@ -307,7 +315,7 @@ export default function App() {
               t={t}
             />
           )}
-          {currentView === 'user-home' && <UserHomeScreen onStartChat={(ctx) => { setChatContext(ctx); setAutoStartMicNext(false); setCurrentView('ai-chat'); }} onExplore={() => setCurrentView('community-feed')} userType={userType} userName={userName} language={language} setLanguage={setLanguage} t={t} onLogout={() => setCurrentView('demo-select')} isDark={isDark} setIsDark={setIsDark} />}
+          {currentView === 'user-home' && <UserHomeScreen onStartChat={(ctx) => { setChatContext(ctx); setAutoStartMicNext(false); setCurrentView('ai-chat'); }} onExplore={() => setCurrentView('community-feed')} userType={userType} userName={userName} language={language} setLanguage={setLanguage} t={t} onLogout={() => setCurrentView('demo-select')} />}
           {currentView === 'admin' && <AdminDashboardScreen onBack={goBack} onLogout={() => setCurrentView('demo-select')} />}
           {currentView === 'ai-chat' && <AiChatScreen context={chatContext} onBack={goBack} onExplore={() => setCurrentView('community-feed')} onConsult={() => { setBookingType(chatContext === 'family' ? 'Family Guidance' : 'Individual Session'); setBookingStep('browse'); setCurrentView('user-consultation'); }} onSaveJournal={handleSaveJournal} onGenerateSummary={(msgs) => { setChatMessages(msgs); setCurrentView('user-summary'); }} autoStartMic={autoStartMicNext} />}
           {currentView === 'user-summary' && (
@@ -764,7 +772,7 @@ function HelpScreen({ onBack, onHome }: { onBack: () => void, onHome: () => void
         {/* Back to Home */}
         <button
           onClick={onHome}
-          className="w-full bg-brand-rust hover:bg-brand-rust/90 text-white rounded-2xl py-4 font-medium text-base transition-colors shadow-sm"
+          className="w-full bg-brand-rust hover:bg-brand-rust/90 text-brand-on-rust rounded-2xl py-4 font-medium text-base transition-colors shadow-sm"
         >
           Back to Home
         </button>
@@ -774,7 +782,7 @@ function HelpScreen({ onBack, onHome }: { onBack: () => void, onHome: () => void
   );
 }
 
-function UserHomeScreen({ onStartChat, onExplore, userType, userName, language, setLanguage, t, onLogout, isDark, setIsDark }: { onStartChat: (context: string) => void, onExplore: () => void, userType: 'guest' | 'user', userName: string, language: Language, setLanguage: (l: Language) => void, t: (key: string) => string, onLogout: () => void, isDark: boolean, setIsDark: (v: boolean) => void }) {
+function UserHomeScreen({ onStartChat, onExplore, userType, userName, language, setLanguage, t, onLogout }: { onStartChat: (context: string) => void, onExplore: () => void, userType: 'guest' | 'user', userName: string, language: Language, setLanguage: (l: Language) => void, t: (key: string) => string, onLogout: () => void }) {
   return (
     <div className="flex flex-col h-full bg-brand-bg relative pb-24">
       {/* Header */}
@@ -792,13 +800,6 @@ function UserHomeScreen({ onStartChat, onExplore, userType, userName, language, 
             className="w-8 h-8 rounded-full bg-brand-surface border border-brand-border flex items-center justify-center text-[10px] font-bold text-brand-ink/60 hover:bg-brand-surface-alt transition-colors"
           >
             {language === 'en' ? 'ने' : 'EN'}
-          </button>
-          <button
-            onClick={() => setIsDark(!isDark)}
-            className="w-8 h-8 rounded-full bg-brand-surface-alt border border-brand-border flex items-center justify-center text-brand-ink/60 hover:text-brand-ink transition-colors"
-            aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-          >
-            {isDark ? <Sun size={14} /> : <Moon size={14} />}
           </button>
           <div className={`w-8 h-8 rounded-full flex items-center justify-center font-serif text-sm shadow-sm ${
             userType === 'guest'
@@ -953,7 +954,7 @@ function LoginScreen({ onLogin, onBack }: { onLogin: () => void, onBack: () => v
       <div className="mt-auto pt-8">
         <button 
           onClick={onLogin}
-          className="w-full bg-brand-rust hover:bg-brand-rust/90 text-white rounded-2xl py-4 font-medium text-lg transition-colors flex items-center justify-center gap-2 shadow-md"
+          className="w-full bg-brand-rust hover:bg-brand-rust/90 text-brand-on-rust rounded-2xl py-4 font-medium text-lg transition-colors flex items-center justify-center gap-2 shadow-md"
         >
           <ShieldCheck size={20} />
           Sign In as Professional
@@ -1295,11 +1296,11 @@ function CommunityFeedScreen({ onBack, onStartShare, userType, userName, onAuthR
 
       {/* Auth Prompt Toast */}
       {showAuthPrompt && (
-        <div className="absolute top-20 left-4 right-4 bg-brand-ink text-white p-4 rounded-2xl shadow-xl z-50 flex items-start gap-3">
+        <div className="absolute top-20 left-4 right-4 bg-brand-ink text-brand-bg p-4 rounded-2xl shadow-xl z-50 flex items-start gap-3">
           <Lock size={20} className="text-brand-rust shrink-0 mt-0.5" />
           <div>
             <p className="font-semibold text-sm mb-1">Create an account to interact</p>
-            <p className="text-xs text-white/70">Join the community to save stories, say "Ma Pani", and connect with professionals.</p>
+            <p className="text-xs text-brand-bg/70">Join the community to save stories, say "Ma Pani", and connect with professionals.</p>
           </div>
         </div>
       )}
@@ -1324,7 +1325,7 @@ function CommunityFeedScreen({ onBack, onStartShare, userType, userName, onAuthR
             onClick={() => setActiveFilter(f)}
             className={`px-4 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
               activeFilter === f
-                ? 'bg-brand-ink text-white shadow-sm'
+                ? 'bg-brand-ink text-brand-bg shadow-sm'
                 : 'bg-brand-surface border border-brand-border text-brand-ink hover:bg-brand-surface-alt'
             }`}
           >
@@ -2009,7 +2010,7 @@ function DashboardScreen({ consultations, onViewBrief, onLogout }: { consultatio
       </div>
 
       <div className="flex gap-2 mb-6 overflow-x-auto scrollbar-hide pb-2">
-        <button className="px-5 py-2 rounded-full bg-brand-ink text-white text-sm font-medium whitespace-nowrap shadow-sm">
+        <button className="px-5 py-2 rounded-full bg-brand-ink text-brand-bg text-sm font-medium whitespace-nowrap shadow-sm">
           Needs Review (1)
         </button>
         <button className="px-5 py-2 rounded-full bg-brand-surface border border-brand-border text-brand-ink/70 text-sm font-medium whitespace-nowrap hover:bg-brand-surface-alt transition-colors">
@@ -2093,7 +2094,7 @@ function ScheduleScreen() {
         {days.map((d, i) => (
           <div key={i} className={`flex flex-col items-center p-3 rounded-2xl min-w-[3rem] ${d.active ? 'bg-brand-rust text-brand-on-rust shadow-md' : 'bg-brand-surface border border-brand-border text-brand-ink/60'}`}>
             <span className="text-[10px] uppercase font-semibold tracking-wider mb-1">{d.day}</span>
-            <span className={`font-serif text-xl ${d.active ? 'text-white' : 'text-brand-ink'}`}>{d.date}</span>
+            <span className={`font-serif text-xl ${d.active ? 'text-brand-on-rust' : 'text-brand-ink'}`}>{d.date}</span>
           </div>
         ))}
       </div>
