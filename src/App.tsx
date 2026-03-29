@@ -609,13 +609,13 @@ function DemoSelectScreen({ onSelect, onAdmin }: { onSelect: (role: 'pro' | 'use
 
         <button
           onClick={onAdmin}
-          className="w-full bg-brand-surface border border-brand-border hover:bg-brand-surface-alt rounded-2xl p-5 text-left transition-colors shadow-sm group"
+          className="w-full bg-brand-surface border border-brand-border hover:bg-brand-surface-alt rounded-2xl p-6 text-left transition-colors shadow-sm group"
         >
-          <div className="flex items-center justify-between mb-1">
-            <h2 className="font-serif text-lg font-semibold text-brand-ink/60">Admin Portal</h2>
-            <ArrowRight size={16} className="text-brand-rust opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="font-serif text-xl font-semibold text-brand-ink">Admin Portal</h2>
+            <ArrowRight size={20} className="text-brand-rust opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
-          <p className="text-sm text-brand-ink/40">Platform monitoring &amp; oversight.</p>
+          <p className="text-sm text-brand-ink/60">Platform monitoring &amp; oversight.</p>
         </button>
       </div>
     </div>
@@ -1315,9 +1315,9 @@ function CommunityFeedScreen({ onBack, onStartShare, userType, userName, onAuthR
         {/* Share CTA */}
         <div
           onClick={() => { if (userType === 'guest') { onAuthRequired(); return; } onStartShare(); }}
-          className="bg-brand-surface border border-brand-border rounded-2xl p-4 flex items-center gap-3 cursor-pointer hover:bg-brand-surface-alt transition-colors shadow-sm"
+          className="bg-brand-surface border border-brand-border rounded-xl p-3 flex items-center gap-3 cursor-pointer hover:bg-brand-surface-alt transition-colors shadow-sm"
         >
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center font-serif text-sm shrink-0 ${
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-serif text-sm shrink-0 ${
             userType === 'guest' ? 'bg-brand-ink/10 text-brand-ink/50' : 'bg-brand-rust/10 text-brand-rust'
           }`}>
             {userType === 'guest' ? '?' : userName.charAt(0)}
@@ -1333,29 +1333,32 @@ function CommunityFeedScreen({ onBack, onStartShare, userType, userName, onAuthR
         {activeFilter === 'All' && (
           <div className="mb-2 mt-2">
             <h2 className="text-sm font-bold text-brand-ink mb-3 px-1">Clinically-Grounded Resources</h2>
-            <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
-              <a href="/content/family-psychoeducation-guide.pdf" target="_blank" rel="noopener noreferrer" className="shrink-0 w-64 bg-brand-rust text-[#FDF6F0] rounded-2xl p-4 shadow-sm relative overflow-hidden group block">
-                <p className="text-xs font-bold uppercase tracking-wider opacity-80 mb-2">Guide</p>
-                <h3 className="font-serif text-lg font-medium leading-tight pr-4">When Someone You Love Is Struggling</h3>
-                <div className="mt-6 flex items-center justify-between">
-                  <span className="text-xs font-medium bg-black/10 px-2 py-1 rounded-md">View PDF</span>
-                  <ArrowRight size={16} className="opacity-100 sm:opacity-0 sm:translate-x-[-10px] sm:group-hover:opacity-100 sm:group-hover:translate-x-0 transition-all" />
+            <div className="flex flex-col gap-2">
+              <a href="/content/family-psychoeducation-guide.pdf" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between w-full bg-brand-surface border border-brand-border text-brand-ink rounded-xl p-3 shadow-sm hover:bg-brand-surface-alt transition-colors group">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-brand-rust mb-0.5">Guide</p>
+                  <h3 className="text-sm font-semibold leading-tight">When Someone You Love Is Struggling</h3>
+                </div>
+                <div className="shrink-0 flex items-center gap-1 bg-brand-bg px-2 py-1 rounded-md border border-brand-border text-[10px] font-bold uppercase text-brand-ink/60 group-hover:text-brand-rust transition-colors">
+                  View PDF <ArrowRight size={12} className="ml-0.5" />
                 </div>
               </a>
-              <a href="/content/individual-wellness-guide.pdf" target="_blank" rel="noopener noreferrer" className="shrink-0 w-64 bg-brand-green text-[#FDF6F0] rounded-2xl p-4 shadow-sm relative overflow-hidden group block">
-                <p className="text-xs font-bold uppercase tracking-wider opacity-80 mb-2">Self-Care</p>
-                <h3 className="font-serif text-lg font-medium leading-tight pr-4">Understanding What You're Feeling</h3>
-                <div className="mt-6 flex items-center justify-between">
-                  <span className="text-xs font-medium bg-black/10 px-2 py-1 rounded-md">View PDF</span>
-                  <ArrowRight size={16} className="opacity-100 sm:opacity-0 sm:translate-x-[-10px] sm:group-hover:opacity-100 sm:group-hover:translate-x-0 transition-all" />
+              <a href="/content/individual-wellness-guide.pdf" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between w-full bg-brand-surface border border-brand-border text-brand-ink rounded-xl p-3 shadow-sm hover:bg-brand-surface-alt transition-colors group">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-brand-green mb-0.5">Self-Care</p>
+                  <h3 className="text-sm font-semibold leading-tight">Understanding What You're Feeling</h3>
+                </div>
+                <div className="shrink-0 flex items-center gap-1 bg-brand-bg px-2 py-1 rounded-md border border-brand-border text-[10px] font-bold uppercase text-brand-ink/60 group-hover:text-brand-green transition-colors">
+                  View PDF <ArrowRight size={12} className="ml-0.5" />
                 </div>
               </a>
-              <a href="/content/cultural-context-community.pdf" target="_blank" rel="noopener noreferrer" className="shrink-0 w-64 bg-brand-surface border border-brand-border text-brand-ink rounded-2xl p-4 shadow-sm relative overflow-hidden group block">
-                <p className="text-xs font-bold uppercase tracking-wider text-brand-ink/50 mb-2">Context</p>
-                <h3 className="font-serif text-lg font-medium leading-tight pr-4">Mental Health in Nepali Families</h3>
-                <div className="mt-6 flex items-center justify-between">
-                  <span className="text-xs font-medium bg-brand-bg px-2 py-1 rounded-md border border-brand-border text-brand-ink/70">View PDF</span>
-                  <ArrowRight size={16} className="text-brand-rust opacity-100 sm:opacity-0 sm:translate-x-[-10px] sm:group-hover:opacity-100 sm:group-hover:translate-x-0 transition-all" />
+              <a href="/content/cultural-context-community.pdf" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between w-full bg-brand-surface border border-brand-border text-brand-ink rounded-xl p-3 shadow-sm hover:bg-brand-surface-alt transition-colors group">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-brand-ink/50 mb-0.5">Context</p>
+                  <h3 className="text-sm font-semibold leading-tight">Mental Health in Nepali Families</h3>
+                </div>
+                <div className="shrink-0 flex items-center gap-1 bg-brand-bg px-2 py-1 rounded-md border border-brand-border text-[10px] font-bold uppercase text-brand-ink/60 transition-colors group-hover:text-brand-ink">
+                  View PDF <ArrowRight size={12} className="ml-0.5" />
                 </div>
               </a>
             </div>
