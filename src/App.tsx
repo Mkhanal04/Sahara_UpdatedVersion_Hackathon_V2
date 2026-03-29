@@ -216,6 +216,7 @@ export default function App() {
   const [bookingStep, setBookingStep] = useState<'browse' | 'confirm' | 'done'>('browse');
   const [bookingType, setBookingType] = useState<string | null>(null);
   const [bookingTime, setBookingTime] = useState<string | null>(null);
+  const [autoStartMicNext, setAutoStartMicNext] = useState(false);
   const [generatedSummary, setGeneratedSummary] = useState<{ summary: string; patterns: string[]; peerEvidence: string } | null>(null);
   const [chatMessages, setChatMessages] = useState<{ role: 'user' | 'model', text: string }[]>([]);
   const [dynamicConsultations, setDynamicConsultations] = useState(CONSULTATIONS);
@@ -301,9 +302,9 @@ export default function App() {
               t={t}
             />
           )}
-          {currentView === 'user-home' && <UserHomeScreen onStartChat={(ctx) => { setChatContext(ctx); setCurrentView('ai-chat'); }} onExplore={() => setCurrentView('community-feed')} userType={userType} userName={userName} language={language} setLanguage={setLanguage} t={t} />}
+          {currentView === 'user-home' && <UserHomeScreen onStartChat={(ctx) => { setChatContext(ctx); setAutoStartMicNext(false); setCurrentView('ai-chat'); }} onExplore={() => setCurrentView('community-feed')} userType={userType} userName={userName} language={language} setLanguage={setLanguage} t={t} />}
           {currentView === 'admin' && <AdminDashboardScreen onBack={goBack} />}
-          {currentView === 'ai-chat' && <AiChatScreen context={chatContext} onBack={goBack} onExplore={() => setCurrentView('community-feed')} onConsult={() => { setBookingType(chatContext === 'family' ? 'Family Guidance' : 'Individual Session'); setBookingStep('browse'); setCurrentView('user-consultation'); }} onSaveJournal={handleSaveJournal} onGenerateSummary={(msgs) => { setChatMessages(msgs); setCurrentView('user-summary'); }} />}
+          {currentView === 'ai-chat' && <AiChatScreen context={chatContext} onBack={goBack} onExplore={() => setCurrentView('community-feed')} onConsult={() => { setBookingType(chatContext === 'family' ? 'Family Guidance' : 'Individual Session'); setBookingStep('browse'); setCurrentView('user-consultation'); }} onSaveJournal={handleSaveJournal} onGenerateSummary={(msgs) => { setChatMessages(msgs); setCurrentView('user-summary'); }} autoStartMic={autoStartMicNext} />}
           {currentView === 'user-summary' && (
             <SummaryScreen
               context={chatContext}
@@ -315,10 +316,10 @@ export default function App() {
               onHome={() => navigateTab('user-home')}
             />
           )}
-          {currentView === 'community-feed' && <CommunityFeedScreen onBack={goBack} onStartShare={() => { setChatContext('share'); setCurrentView('ai-chat'); }} userType={userType} userName={userName} onAuthRequired={() => setShowSignUpPrompt(true)} t={t} />}
+          {currentView === 'community-feed' && <CommunityFeedScreen onBack={goBack} onStartShare={() => { setChatContext('share'); setAutoStartMicNext(false); setCurrentView('ai-chat'); }} userType={userType} userName={userName} onAuthRequired={() => setShowSignUpPrompt(true)} t={t} />}
           {currentView === 'user-journal' && (
             journalUnlocked
-              ? <JournalScreen entries={journalEntries} onBack={goBack} onStartChat={() => { setChatContext('individual'); setCurrentView('ai-chat'); }} />
+              ? <JournalScreen entries={journalEntries} onBack={goBack} onStartChat={() => { setChatContext('individual'); setAutoStartMicNext(true); setCurrentView('ai-chat'); }} />
               : <JournalPinScreen onUnlock={() => setJournalUnlocked(true)} onSkip={() => setJournalUnlocked(true)} onBack={goBack} />
           )}
           {currentView === 'login' && <LoginScreen onLogin={handleLogin} onBack={goBack} />}
@@ -1465,7 +1466,7 @@ function CommunityFeedScreen({ onBack, onStartShare, userType, userName, onAuthR
   );
 }
 
-function AiChatScreen({ context, onBack, onExplore, onConsult, onSaveJournal, onGenerateSummary }: { context: string, onBack: () => void, onExplore: () => void, onConsult: () => void, onSaveJournal: (summary: string, mood: string, techniques: string[]) => void, onGenerateSummary: (messages: { role: 'user' | 'model', text: string }[]) => void }) {
+function AiChatScreen({ context, onBack, onExplore, onConsult, onSaveJournal, onGenerateSummary, autoStartMic }: { context: string, onBack: () => void, onExplore: () => void, onConsult: () => void, onSaveJournal: (summary: string, mood: string, techniques: string[]) => void, onGenerateSummary: (messages: { role: 'user' | 'model', text: string }[]) => void, autoStartMic?: boolean }) {
   const greetings: Record<string, string> = {
     family: "You're here because you care about someone. That already matters. Tell me what you've noticed — there are no wrong words here.",
     self: "This is your space. No labels, no rush. What's been on your mind?",
@@ -1514,6 +1515,18 @@ function AiChatScreen({ context, onBack, onExplore, onConsult, onSaveJournal, on
       };
 
       recognitionRef.current = recognition;
+
+      if (autoStartMic) {
+        setTimeout(() => {
+          try {
+            recognition.lang = 'en-US'; // Defaulting to EN as initialized
+            recognition.start();
+            setIsRecording(true);
+          } catch (e) {
+            console.error("Could not auto-start recording", e);
+          }
+        }, 300);
+      }
     }
 
     return () => {
