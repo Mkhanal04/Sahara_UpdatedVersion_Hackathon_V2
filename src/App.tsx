@@ -605,7 +605,7 @@ function DemoSelectScreen({ onSelect, onAdmin }: { onSelect: (role: 'pro' | 'use
         >
           <div className="flex items-center justify-between mb-2">
             <h2 className="font-serif text-xl font-semibold text-brand-ink">Professional</h2>
-            <ArrowRight size={20} className="text-brand-rust opacity-0 group-hover:opacity-100 transition-opacity" />
+            <ArrowRight size={20} className="text-brand-ink/20 group-hover:text-brand-rust transition-colors" />
           </div>
           <p className="text-sm text-brand-ink/60">Queue, AI summaries, client roster, and schedule.</p>
         </button>
@@ -617,7 +617,7 @@ function DemoSelectScreen({ onSelect, onAdmin }: { onSelect: (role: 'pro' | 'use
         >
           <div className="flex items-center justify-between mb-2">
             <h2 className="font-serif text-xl font-semibold text-brand-ink">Admin Portal</h2>
-            <ArrowRight size={20} className="text-brand-rust opacity-0 group-hover:opacity-100 transition-opacity" />
+            <ArrowRight size={20} className="text-brand-ink/20 group-hover:text-brand-rust transition-colors" />
           </div>
           <p className="text-sm text-brand-ink/60">Platform monitoring &amp; oversight.</p>
         </button>
@@ -819,7 +819,7 @@ function UserHomeScreen({ onStartChat, onExplore, userType, userName, language, 
         <p className="text-brand-ink/60 text-sm mb-8">{t('home.subheading')}</p>
 
         <div className="space-y-4 mb-10">
-          <button onClick={() => onStartChat('family')} className="w-full bg-brand-surface border border-brand-border hover:bg-brand-surface-alt rounded-2xl p-5 text-left transition-colors shadow-sm flex items-center gap-4 group">
+          <button onClick={() => onStartChat('family')} className="w-full bg-brand-surface border border-brand-border hover:bg-brand-surface-alt rounded-2xl p-5 text-left transition-colors shadow-sm flex items-center gap-3 group">
             <div className="w-12 h-12 rounded-full bg-brand-rust/10 flex items-center justify-center text-brand-rust shrink-0">
               <Users size={20} />
             </div>
@@ -830,7 +830,7 @@ function UserHomeScreen({ onStartChat, onExplore, userType, userName, language, 
             <ArrowRight size={16} className="text-brand-ink/20 group-hover:text-brand-rust transition-colors shrink-0" />
           </button>
 
-          <button onClick={() => onStartChat('self')} className="w-full bg-brand-surface border border-brand-border hover:bg-brand-surface-alt rounded-2xl p-5 text-left transition-colors shadow-sm flex items-center gap-4 group">
+          <button onClick={() => onStartChat('self')} className="w-full bg-brand-surface border border-brand-border hover:bg-brand-surface-alt rounded-2xl p-5 text-left transition-colors shadow-sm flex items-center gap-3 group">
             <div className="w-12 h-12 rounded-full bg-brand-green/10 flex items-center justify-center text-brand-green shrink-0">
               <User size={20} />
             </div>
@@ -841,7 +841,7 @@ function UserHomeScreen({ onStartChat, onExplore, userType, userName, language, 
             <ArrowRight size={16} className="text-brand-ink/20 group-hover:text-brand-green transition-colors shrink-0" />
           </button>
 
-          <button onClick={() => onStartChat('share')} className="w-full bg-brand-rust/10 border border-brand-rust/20 hover:bg-brand-rust/20 rounded-2xl p-5 text-left transition-colors shadow-sm flex items-center gap-4 group">
+          <button onClick={() => onStartChat('share')} className="w-full bg-brand-rust/10 border border-brand-rust/20 hover:bg-brand-rust/20 rounded-2xl p-5 text-left transition-colors shadow-sm flex items-center gap-3 group">
             <div className="w-12 h-12 rounded-full bg-brand-rust/20 flex items-center justify-center text-brand-rust shrink-0">
               <Edit3 size={20} />
             </div>
@@ -879,7 +879,7 @@ function UserHomeScreen({ onStartChat, onExplore, userType, userName, language, 
           <button onClick={onExplore} className="w-full text-center py-4 text-sm font-medium text-brand-rust hover:underline mt-2">
             See all community stories &rarr;
           </button>
-          <p className="text-center text-brand-ink/50 mt-1" style={{ fontSize: '10px' }}>
+          <p className="text-center text-brand-ink/70 mt-3 px-4" style={{ fontSize: '10px' }}>
             Sahara organizes observations — it does not diagnose or replace professional care.
           </p>
         </div>
