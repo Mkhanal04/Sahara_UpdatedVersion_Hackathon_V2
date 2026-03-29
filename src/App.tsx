@@ -292,7 +292,7 @@ export default function App() {
         
         {/* Content Area */}
         <div className="flex-1 overflow-y-auto relative scrollbar-hide animate-page-in" key={currentView}>
-          {currentView === 'demo-select' && <DemoSelectScreen onSelect={(role) => navigateTab(role === 'pro' ? 'login' : 'welcome')} />}
+          {currentView === 'demo-select' && <DemoSelectScreen onSelect={(role) => navigateTab(role === 'pro' ? 'login' : 'welcome')} onAdmin={() => setCurrentView('admin')} />}
           {currentView === 'welcome' && (
             <WelcomeScreen
               onCreateAccount={() => { setUserType('user'); setUserName('Sita'); navigateTab('user-home'); }}
@@ -301,7 +301,7 @@ export default function App() {
               t={t}
             />
           )}
-          {currentView === 'user-home' && <UserHomeScreen onStartChat={(ctx) => { setChatContext(ctx); setCurrentView('ai-chat'); }} onExplore={() => setCurrentView('community-feed')} onAdmin={() => setCurrentView('admin')} userType={userType} userName={userName} language={language} setLanguage={setLanguage} t={t} />}
+          {currentView === 'user-home' && <UserHomeScreen onStartChat={(ctx) => { setChatContext(ctx); setCurrentView('ai-chat'); }} onExplore={() => setCurrentView('community-feed')} userType={userType} userName={userName} language={language} setLanguage={setLanguage} t={t} />}
           {currentView === 'admin' && <AdminDashboardScreen onBack={goBack} />}
           {currentView === 'ai-chat' && <AiChatScreen context={chatContext} onBack={goBack} onExplore={() => setCurrentView('community-feed')} onConsult={() => { setBookingType(chatContext === 'family' ? 'Family Guidance' : 'Individual Session'); setBookingStep('browse'); setCurrentView('user-consultation'); }} onSaveJournal={handleSaveJournal} onGenerateSummary={(msgs) => { setChatMessages(msgs); setCurrentView('user-summary'); }} />}
           {currentView === 'user-summary' && (
@@ -573,7 +573,7 @@ export default function App() {
 
 // --- SCREENS ---
 
-function DemoSelectScreen({ onSelect }: { onSelect: (role: 'pro' | 'user') => void }) {
+function DemoSelectScreen({ onSelect, onAdmin }: { onSelect: (role: 'pro' | 'user') => void; onAdmin: () => void }) {
   return (
     <div className="p-8 flex flex-col h-full justify-center items-center text-center bg-brand-bg">
       <div className="mb-12">
@@ -596,7 +596,7 @@ function DemoSelectScreen({ onSelect }: { onSelect: (role: 'pro' | 'user') => vo
           <p className="text-sm text-[#FDF6F0]/70">Community feed, anonymous browsing, and intake flow.</p>
         </button>
 
-        <button 
+        <button
           onClick={() => onSelect('pro')}
           className="w-full bg-brand-surface border border-brand-border hover:bg-brand-surface-alt rounded-2xl p-6 text-left transition-colors shadow-sm group"
         >
@@ -605,6 +605,17 @@ function DemoSelectScreen({ onSelect }: { onSelect: (role: 'pro' | 'user') => vo
             <ArrowRight size={20} className="text-brand-rust opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
           <p className="text-sm text-brand-ink/60">Queue, AI summaries, client roster, and schedule.</p>
+        </button>
+
+        <button
+          onClick={onAdmin}
+          className="w-full bg-brand-surface border border-brand-border hover:bg-brand-surface-alt rounded-2xl p-5 text-left transition-colors shadow-sm group"
+        >
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="font-serif text-lg font-semibold text-brand-ink/60">Admin Portal</h2>
+            <ArrowRight size={16} className="text-brand-rust opacity-0 group-hover:opacity-100 transition-opacity" />
+          </div>
+          <p className="text-sm text-brand-ink/40">Platform monitoring &amp; oversight.</p>
         </button>
       </div>
     </div>
@@ -754,7 +765,7 @@ function HelpScreen({ onBack, onHome }: { onBack: () => void, onHome: () => void
   );
 }
 
-function UserHomeScreen({ onStartChat, onExplore, onAdmin, userType, userName, language, setLanguage, t }: { onStartChat: (context: string) => void, onExplore: () => void, onAdmin: () => void, userType: 'guest' | 'user', userName: string, language: Language, setLanguage: (l: Language) => void, t: (key: string) => string }) {
+function UserHomeScreen({ onStartChat, onExplore, userType, userName, language, setLanguage, t }: { onStartChat: (context: string) => void, onExplore: () => void, userType: 'guest' | 'user', userName: string, language: Language, setLanguage: (l: Language) => void, t: (key: string) => string }) {
   return (
     <div className="flex flex-col h-full bg-brand-bg relative pb-24">
       {/* Header */}
@@ -829,17 +840,6 @@ function UserHomeScreen({ onStartChat, onExplore, onAdmin, userType, userName, l
             </div>
           </button>
 
-          {/* Admin Portal — demo only */}
-          <button onClick={onAdmin} className="w-full bg-brand-surface border border-brand-border hover:bg-brand-surface-alt rounded-2xl p-4 text-left transition-colors shadow-sm flex items-center gap-3 group mt-2">
-            <div className="w-10 h-10 rounded-full bg-brand-ink/5 flex items-center justify-center text-brand-ink/40 shrink-0">
-              <Shield size={18} />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-serif text-sm font-semibold text-brand-ink/60 mb-0.5">Admin Portal</h3>
-              <p className="text-xs text-brand-ink/40">Platform monitoring &amp; oversight</p>
-            </div>
-            <ArrowRight size={14} className="text-brand-ink/20 group-hover:text-brand-ink/40 transition-colors shrink-0" />
-          </button>
         </div>
 
         <div className="mb-4">
