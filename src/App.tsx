@@ -1,6 +1,120 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { ShieldCheck, Lock, FileText, Calendar, Users, Home, ThumbsUp, ThumbsDown, ArrowRight, ChevronLeft, MessageCircle, AlertCircle, Heart, UserPlus, Eye, Sparkles, Send, User, Edit3, Phone, Mic, Square, BookOpen, Activity } from 'lucide-react';
-import { generateChatResponse } from './services/geminiService';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { ShieldCheck, Lock, FileText, Calendar, Users, Home, ThumbsUp, ThumbsDown, ArrowRight, ChevronLeft, MessageCircle, AlertCircle, Heart, UserPlus, Eye, Sparkles, Send, User, Edit3, Phone, Mic, Square, BookOpen, Activity, Info } from 'lucide-react';
+import { generateChatResponse, generateObservationSummary } from './services/geminiService';
+
+// --- LANGUAGE STRINGS ---
+type Language = 'en' | 'ne';
+
+const STRINGS: Record<Language, Record<string, string>> = {
+  en: {
+    'welcome.headline': 'You are not alone.',
+    'welcome.mapani': 'Ma Pani.',
+    'welcome.subtitle': 'A safe, culturally grounded space for you and your family to find understanding and care.',
+    'welcome.createAccount': 'Create Account',
+    'welcome.login': 'Log In',
+    'welcome.explore': 'Explore Anonymously',
+    'home.nepali': 'आज मनमा के छ?',
+    'home.heading': 'What brings you here today?',
+    'home.subheading': 'A quiet space. No labels, no judgment.',
+    'home.door.family.title': "I'm concerned about someone I love",
+    'home.door.family.desc': 'For family members who noticed a change',
+    'home.door.self.title': 'I want to understand myself better',
+    'home.door.self.desc': 'A private conversation with Maan',
+    'home.door.share.title': 'Share your experience',
+    'home.door.share.desc': 'Your words could help someone going through the same thing.',
+    'home.community': 'From the community',
+    'home.relate': 'relate',
+    'chat.title': 'Maan',
+    'chat.active': 'Active now',
+    'chat.placeholder': "Share what's on your mind...",
+    'chat.greeting.family': "You're here because you care about someone. That already matters.",
+    'chat.greeting.family.sub': 'Tell me what you have noticed — there are no wrong words here.',
+    'chat.greeting.self': 'This is your space. No labels, no rush.',
+    'chat.greeting.self.sub': "What's been on your mind?",
+    'chat.greeting.share': 'Your experience could help someone who feels alone right now.',
+    'chat.greeting.share.sub': 'Share what feels right.',
+    'chautari.title': 'Chautari',
+    'chautari.subtitle': '"Me Too" — You are not alone in this.',
+    'chautari.shareCta': "What's on your mind?",
+    'chautari.share': 'Share',
+    'chautari.maPani': 'Ma Pani',
+    'chautari.filter.all': 'All Stories',
+    'chautari.signUpToShare': 'Sign up to share your experience',
+    'journal.title': 'My Journal',
+    'journal.subtitle': 'Private insights and reflections',
+    'consultation.title': 'Connect with a Professional',
+    'consultation.subtitle': 'Licensed professionals who understand your culture and context.',
+    'nav.home': 'Home',
+    'nav.chautari': 'Chautari',
+    'nav.journal': 'Journal',
+    'nav.consultation': 'Consult',
+    'help.title': 'Help & Support',
+    'help.crisis.nepal': 'Nepal: 1166',
+    'help.crisis.nepal.desc': 'National Mental Health Helpline',
+    'help.crisis.us': 'US: 988',
+    'help.crisis.us.desc': 'Suicide & Crisis Lifeline',
+    'auth.join': 'Join the community',
+    'auth.joinDesc': 'Create a free account to relate to stories, share experiences, and save your journal.',
+    'auth.createFree': 'Create Free Account',
+    'auth.continueBrowsing': 'Continue browsing',
+    'auth.guestLabel': 'Browsing anonymously',
+    'auth.signUpToRelate': 'Sign up to relate',
+  },
+  ne: {
+    'welcome.headline': 'तपाईं एक्लो हुनुहुन्न।',
+    'welcome.mapani': 'म पनि।',
+    'welcome.subtitle': 'तपाईं र तपाईंको परिवारको लागि एक सुरक्षित, सांस्कृतिक रूपमा जोडिएको ठाउँ।',
+    'welcome.createAccount': 'खाता बनाउनुहोस्',
+    'welcome.login': 'लग इन',
+    'welcome.explore': 'अज्ञात रूपमा हेर्नुहोस्',
+    'home.nepali': 'आज मनमा के छ?',
+    'home.heading': 'आज तपाईंलाई यहाँ के ल्यायो?',
+    'home.subheading': 'एक शान्त ठाउँ। कुनै लेबल छैन, कुनै निर्णय छैन।',
+    'home.door.family.title': 'मलाई मेरो माया गर्ने मान्छेको चिन्ता छ',
+    'home.door.family.desc': 'परिवर्तन देख्ने परिवारका सदस्यको लागि',
+    'home.door.self.title': 'म आफैंलाई राम्रोसँग बुझ्न चाहन्छु',
+    'home.door.self.desc': 'माँनसँग एक निजी कुराकानी',
+    'home.door.share.title': 'आफ्नो अनुभव साझा गर्नुहोस्',
+    'home.door.share.desc': 'तपाईंको शब्दले उही बाटोमा हिँड्ने कसैलाई मद्दत गर्न सक्छ।',
+    'home.community': 'समुदायबाट',
+    'home.relate': 'जना',
+    'chat.title': 'माँन',
+    'chat.active': 'सक्रिय',
+    'chat.placeholder': 'मनमा जे छ भन्नुहोस्...',
+    'chat.greeting.family': 'तपाईं यहाँ हुनुहुन्छ किनभने तपाईं कसैको ख्याल राख्नुहुन्छ। त्यो आफैंमा ठूलो कुरा हो।',
+    'chat.greeting.family.sub': 'तपाईंले के देख्नुभयो भन्नुहोस् — यहाँ कुनै गलत शब्द छैन।',
+    'chat.greeting.self': 'यो तपाईंको ठाउँ हो। कुनै लेबल छैन, कुनै हतार छैन।',
+    'chat.greeting.self.sub': 'मनमा के चलिरहेको छ?',
+    'chat.greeting.share': 'तपाईंको अनुभवले एक्लो महसुस गर्ने कसैलाई मद्दत गर्न सक्छ।',
+    'chat.greeting.share.sub': 'जे ठीक लाग्छ त्यो साझा गर्नुहोस्।',
+    'chautari.title': 'चौतारी',
+    'chautari.subtitle': '"म पनि" — तपाईं यसमा एक्लो हुनुहुन्न।',
+    'chautari.shareCta': 'मनमा के छ?',
+    'chautari.share': 'साझा',
+    'chautari.maPani': 'म पनि',
+    'chautari.filter.all': 'सबै कथा',
+    'chautari.signUpToShare': 'साझा गर्न खाता बनाउनुहोस्',
+    'journal.title': 'मेरो डायरी',
+    'journal.subtitle': 'निजी अन्तरदृष्टि र प्रतिबिम्ब',
+    'consultation.title': 'पेशेवर खोज्नुहोस्',
+    'consultation.subtitle': 'सांस्कृतिक रूपमा जोडिएको, व्यावसायिक रूपमा प्रशिक्षित।',
+    'nav.home': 'घर',
+    'nav.chautari': 'चौतारी',
+    'nav.journal': 'डायरी',
+    'nav.consultation': 'परामर्श',
+    'help.title': 'मद्दत',
+    'help.crisis.nepal': 'नेपाल: ११६६',
+    'help.crisis.nepal.desc': 'राष्ट्रिय मानसिक स्वास्थ्य हेल्पलाइन',
+    'help.crisis.us': 'US: 988',
+    'help.crisis.us.desc': 'आत्महत्या र संकट लाइफलाइन',
+    'auth.join': 'समुदायमा सामेल हुनुहोस्',
+    'auth.joinDesc': 'कथामा साथ दिन, अनुभव साझा गर्न, र डायरी सुरक्षित गर्न निःशुल्क खाता बनाउनुहोस्।',
+    'auth.createFree': 'खाता बनाउनुहोस्',
+    'auth.continueBrowsing': 'हेरिरहनुहोस्',
+    'auth.guestLabel': 'अज्ञात रूपमा हेर्दै',
+    'auth.signUpToRelate': 'साथ दिन खाता बनाउनुहोस्',
+  }
+};
 
 // --- MOCK DATA ---
 const CONSULTATIONS = [
@@ -102,6 +216,27 @@ export default function App() {
   const [bookingStep, setBookingStep] = useState<'browse' | 'confirm' | 'done'>('browse');
   const [bookingType, setBookingType] = useState<string | null>(null);
   const [bookingTime, setBookingTime] = useState<string | null>(null);
+  const [generatedSummary, setGeneratedSummary] = useState<{ summary: string; patterns: string[]; peerEvidence: string } | null>(null);
+  const [chatMessages, setChatMessages] = useState<{ role: 'user' | 'model', text: string }[]>([]);
+  const [dynamicConsultations, setDynamicConsultations] = useState(CONSULTATIONS);
+  const [userType, setUserType] = useState<'guest' | 'user'>('guest');
+  const [userName, setUserName] = useState<string>('');
+  const [showSignUpPrompt, setShowSignUpPrompt] = useState(false);
+  const [language, setLanguage] = useState<Language>('en');
+  const t = useCallback((key: string) => STRINGS[language]?.[key] ?? key, [language]);
+
+  useEffect(() => {
+    if (generatedSummary) {
+      setDynamicConsultations(prev => prev.map(c =>
+        c.id === '1' ? {
+          ...c,
+          summary: generatedSummary.summary,
+          evidence: generatedSummary.peerEvidence,
+          status: 'Needs Review'
+        } : c
+      ));
+    }
+  }, [generatedSummary]);
 
   const handleSaveJournal = (summary: string, mood: string, techniques: string[]) => {
     const newEntry = {
@@ -156,18 +291,37 @@ export default function App() {
       <div className="w-full max-w-[390px] h-[844px] max-h-[90vh] bg-brand-bg rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col relative border-4 border-white">
         
         {/* Content Area */}
-        <div className="flex-1 overflow-y-auto relative scrollbar-hide">
-          {currentView === 'demo-select' && <DemoSelectScreen onSelect={(role) => navigateTab(role === 'pro' ? 'login' : 'user-home')} />}
-          {currentView === 'user-home' && <UserHomeScreen onStartChat={(ctx) => { setChatContext(ctx); setCurrentView('ai-chat'); }} onExplore={() => setCurrentView('community-feed')} />}
-          {currentView === 'ai-chat' && <AiChatScreen context={chatContext} onBack={goBack} onExplore={() => setCurrentView('community-feed')} onConsult={() => { setBookingType(chatContext === 'family' ? 'Family Guidance' : 'Individual Session'); setBookingStep('browse'); setCurrentView('user-consultation'); }} onSaveJournal={handleSaveJournal} />}
-          {currentView === 'community-feed' && <CommunityFeedScreen onBack={goBack} onStartShare={() => { setChatContext('share'); setCurrentView('ai-chat'); }} />}
+        <div className="flex-1 overflow-y-auto relative scrollbar-hide animate-page-in" key={currentView}>
+          {currentView === 'demo-select' && <DemoSelectScreen onSelect={(role) => navigateTab(role === 'pro' ? 'login' : 'welcome')} />}
+          {currentView === 'welcome' && (
+            <WelcomeScreen
+              onCreateAccount={() => { setUserType('user'); setUserName('Sita'); navigateTab('user-home'); }}
+              onLogin={() => { setUserType('user'); setUserName('Sita'); navigateTab('user-home'); }}
+              onExplore={() => { setUserType('guest'); setUserName(''); navigateTab('user-home'); }}
+              t={t}
+            />
+          )}
+          {currentView === 'user-home' && <UserHomeScreen onStartChat={(ctx) => { setChatContext(ctx); setCurrentView('ai-chat'); }} onExplore={() => setCurrentView('community-feed')} userType={userType} userName={userName} language={language} setLanguage={setLanguage} t={t} />}
+          {currentView === 'ai-chat' && <AiChatScreen context={chatContext} onBack={goBack} onExplore={() => setCurrentView('community-feed')} onConsult={() => { setBookingType(chatContext === 'family' ? 'Family Guidance' : 'Individual Session'); setBookingStep('browse'); setCurrentView('user-consultation'); }} onSaveJournal={handleSaveJournal} onGenerateSummary={(msgs) => { setChatMessages(msgs); setCurrentView('user-summary'); }} />}
+          {currentView === 'user-summary' && (
+            <SummaryScreen
+              context={chatContext}
+              messages={chatMessages}
+              generatedSummary={generatedSummary}
+              setGeneratedSummary={setGeneratedSummary}
+              onConsult={() => { setBookingType(chatContext === 'family' ? 'Family Guidance' : 'Individual Session'); setBookingStep('browse'); setCurrentView('user-consultation'); }}
+              onBack={goBack}
+              onHome={() => navigateTab('user-home')}
+            />
+          )}
+          {currentView === 'community-feed' && <CommunityFeedScreen onBack={goBack} onStartShare={() => { setChatContext('share'); setCurrentView('ai-chat'); }} userType={userType} userName={userName} onAuthRequired={() => setShowSignUpPrompt(true)} t={t} />}
           {currentView === 'user-journal' && (
             journalUnlocked
               ? <JournalScreen entries={journalEntries} onBack={goBack} />
               : <JournalPinScreen onUnlock={() => setJournalUnlocked(true)} onSkip={() => setJournalUnlocked(true)} onBack={goBack} />
           )}
           {currentView === 'login' && <LoginScreen onLogin={handleLogin} onBack={goBack} />}
-          {currentView === 'queue' && <DashboardScreen onViewBrief={handleViewBrief} />}
+          {currentView === 'queue' && <DashboardScreen consultations={dynamicConsultations} onViewBrief={handleViewBrief} />}
           {currentView === 'schedule' && <ScheduleScreen />}
           {currentView === 'profile' && <ProfileScreen />}
           {currentView === 'clients' && <ClientsScreen onViewClient={handleViewClient} />}
@@ -178,9 +332,9 @@ export default function App() {
             />
           )}
           {currentView === 'brief' && selectedConsultId && (
-            <PatientBriefScreen 
-              consult={CONSULTATIONS.find(c => c.id === selectedConsultId)!} 
-              onBack={goBack} 
+            <PatientBriefScreen
+              consult={dynamicConsultations.find(c => c.id === selectedConsultId)!}
+              onBack={goBack}
             />
           )}
           {currentView === 'user-consultation' && (
@@ -202,21 +356,21 @@ export default function App() {
                     <p className="text-sm font-medium text-brand-rust mb-1">{bookingTime}</p>
                     <p className="text-xs text-brand-ink/50 mb-6">{bookingType}</p>
                     <p className="text-xs text-brand-ink/50 mb-8 max-w-[260px]">You'll receive preparation guidance before your session. Your Maan conversation summary will be shared with the professional (with your consent).</p>
-                    <button onClick={() => navigateTab('user-home')} className="w-full bg-brand-rust text-white rounded-2xl py-4 font-medium text-sm mb-3">Back to Home</button>
+                    <button onClick={() => navigateTab('user-home')} className="w-full bg-brand-rust text-[#FDF6F0] rounded-2xl py-4 font-medium text-sm mb-3">Back to Home</button>
                     <button onClick={() => setCurrentView('community-feed')} className="w-full bg-brand-surface border border-brand-border text-brand-ink rounded-2xl py-4 font-medium text-sm">Continue Exploring</button>
                   </div>
                 ) : (
                   <>
                     {/* Professional Card */}
-                    <div className="bg-brand-surface rounded-[1.5rem] p-5 border border-brand-border shadow-sm">
+                    <div className="bg-brand-surface rounded-2xl p-5 border border-brand-border shadow-sm">
                       <div className="flex items-center gap-4 mb-4">
                         <div className="w-14 h-14 rounded-full bg-brand-rust/10 flex items-center justify-center font-serif text-brand-rust text-lg font-semibold shrink-0">AS</div>
                         <div className="flex-1">
                           <h3 className="font-serif text-lg font-semibold text-brand-ink">Dr. Anjali Sharma</h3>
                           <p className="text-xs text-brand-ink/60">Clinical Psychologist · Kathmandu</p>
                           <div className="flex items-center gap-1 mt-1">
-                            <span className="text-brand-rust text-xs">★ 4.9</span>
-                            <span className="text-[10px] text-brand-ink/40">(124 sessions)</span>
+                            <span className="text-brand-ink/70 text-xs">★ 4.9</span>
+                            <span className="text-[10px] text-brand-ink/50">(124 sessions)</span>
                           </div>
                         </div>
                       </div>
@@ -230,13 +384,13 @@ export default function App() {
 
                     {/* Choose Type */}
                     <div>
-                      <h3 className="text-xs font-bold uppercase tracking-wider text-brand-ink/40 mb-3">Session Type</h3>
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-brand-ink/50 mb-3">Session Type</h3>
                       <div className="grid grid-cols-2 gap-3">
                         <button
                           onClick={() => setBookingType('Family Guidance')}
                           className={`p-4 rounded-2xl border text-left transition-colors ${bookingType === 'Family Guidance' ? 'bg-brand-green/10 border-brand-green' : 'bg-brand-surface border-brand-border hover:bg-brand-surface-alt'}`}
                         >
-                          <Users size={18} className={`${bookingType === 'Family Guidance' ? 'text-brand-green' : 'text-brand-ink/40'} mb-2`} />
+                          <Users size={18} className={`${bookingType === 'Family Guidance' ? 'text-brand-green' : 'text-brand-ink/50'} mb-2`} />
                           <p className="text-xs font-semibold text-brand-ink">Family Guidance</p>
                           <p className="text-[10px] text-brand-ink/50 mt-0.5">For someone you care about</p>
                         </button>
@@ -244,7 +398,7 @@ export default function App() {
                           onClick={() => setBookingType('Individual Session')}
                           className={`p-4 rounded-2xl border text-left transition-colors ${bookingType === 'Individual Session' ? 'bg-brand-rust/10 border-brand-rust' : 'bg-brand-surface border-brand-border hover:bg-brand-surface-alt'}`}
                         >
-                          <User size={18} className={`${bookingType === 'Individual Session' ? 'text-brand-rust' : 'text-brand-ink/40'} mb-2`} />
+                          <User size={18} className={`${bookingType === 'Individual Session' ? 'text-brand-rust' : 'text-brand-ink/50'} mb-2`} />
                           <p className="text-xs font-semibold text-brand-ink">Individual Session</p>
                           <p className="text-[10px] text-brand-ink/50 mt-0.5">For personal support</p>
                         </button>
@@ -254,7 +408,7 @@ export default function App() {
                     {/* Choose Time */}
                     {bookingType && (
                       <div>
-                        <h3 className="text-xs font-bold uppercase tracking-wider text-brand-ink/40 mb-3">Available Times</h3>
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-brand-ink/50 mb-3">Available Times</h3>
                         <div className="space-y-2">
                           {['Tomorrow, 10:00 AM', 'Tomorrow, 2:00 PM', 'March 30, 11:00 AM', 'March 30, 4:00 PM'].map(slot => (
                             <button
@@ -273,12 +427,12 @@ export default function App() {
                     {bookingType && bookingTime && (
                       <div>
                         <button
-                          onClick={() => setBookingStep('done')}
-                          className="w-full bg-brand-rust text-white rounded-2xl py-4 font-medium text-sm shadow-md hover:bg-brand-rust/90 transition-colors"
+                          onClick={() => { if (userType === 'guest') { setShowSignUpPrompt(true); return; } setBookingStep('done'); }}
+                          className="w-full bg-brand-rust text-[#FDF6F0] rounded-2xl py-4 font-medium text-sm shadow-md hover:bg-brand-rust/90 transition-colors"
                         >
                           Book Consultation
                         </button>
-                        <p className="text-[10px] text-brand-ink/40 text-center mt-3 leading-relaxed">
+                        <p className="text-[10px] text-brand-ink/50 text-center mt-3 leading-relaxed">
                           Consultations are guidance sessions, not diagnostic appointments. NPR 500-1000 / $5-11 per session.
                         </p>
                       </div>
@@ -286,7 +440,7 @@ export default function App() {
 
                     {/* What to Expect */}
                     <div className="bg-brand-bg rounded-2xl p-4 border border-brand-border/50">
-                      <h3 className="text-xs font-bold uppercase tracking-wider text-brand-ink/40 mb-3">What to Expect</h3>
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-brand-ink/50 mb-3">What to Expect</h3>
                       <div className="space-y-3">
                         {[
                           { icon: <MessageCircle size={14} />, text: 'Your Maan conversation summary is shared with your consent' },
@@ -311,71 +465,104 @@ export default function App() {
 
         {/* Bottom Navigation (User) */}
         {['user-home', 'community-feed', 'user-consultation', 'user-journal'].includes(currentView) && (
-          <div className="bg-brand-bg border-t border-brand-border px-6 py-4 flex justify-between items-center pb-8">
-            <button 
+          <nav aria-label="Main navigation" className="bg-brand-bg border-t border-brand-border px-6 py-4 flex justify-between items-center pb-8">
+            <button
+              aria-current={currentView === 'user-home' ? 'page' : undefined}
               onClick={() => navigateTab('user-home')}
-              className={`flex flex-col items-center transition-colors ${currentView === 'user-home' ? 'text-brand-rust' : 'text-brand-ink/40 hover:text-brand-ink'}`}
+              className={`flex flex-col items-center transition-colors ${currentView === 'user-home' ? 'text-brand-rust' : 'text-brand-ink/50 hover:text-brand-ink'}`}
             >
               <Home size={24} strokeWidth={currentView === 'user-home' ? 2.5 : 2} />
-              <span className="text-[10px] font-medium mt-1">Home</span>
+              <span className="text-[10px] font-medium mt-1">{t('nav.home')}</span>
             </button>
-            <button 
+            <button
+              aria-current={currentView === 'community-feed' ? 'page' : undefined}
               onClick={() => navigateTab('community-feed')}
-              className={`flex flex-col items-center transition-colors ${currentView === 'community-feed' ? 'text-brand-rust' : 'text-brand-ink/40 hover:text-brand-ink'}`}
+              className={`flex flex-col items-center transition-colors ${currentView === 'community-feed' ? 'text-brand-rust' : 'text-brand-ink/50 hover:text-brand-ink'}`}
             >
               <Users size={24} strokeWidth={currentView === 'community-feed' ? 2.5 : 2} />
-              <span className="text-[10px] font-medium mt-1">Chautari</span>
+              <span className="text-[10px] font-medium mt-1">{t('nav.chautari')}</span>
             </button>
-            <button 
-              onClick={() => navigateTab('user-journal')}
-              className={`flex flex-col items-center transition-colors ${currentView === 'user-journal' ? 'text-brand-rust' : 'text-brand-ink/40 hover:text-brand-ink'}`}
+            <button
+              aria-current={currentView === 'user-journal' ? 'page' : undefined}
+              onClick={() => { if (userType === 'guest') { setShowSignUpPrompt(true); return; } navigateTab('user-journal'); }}
+              className={`flex flex-col items-center transition-colors ${currentView === 'user-journal' ? 'text-brand-rust' : 'text-brand-ink/50 hover:text-brand-ink'}`}
             >
               <BookOpen size={24} strokeWidth={currentView === 'user-journal' ? 2.5 : 2} />
-              <span className="text-[10px] font-medium mt-1">Journal</span>
+              <span className="text-[10px] font-medium mt-1">{t('nav.journal')}</span>
             </button>
-            <button 
+            <button
+              aria-current={currentView === 'user-consultation' ? 'page' : undefined}
               onClick={() => { setBookingStep('browse'); setBookingType(null); setBookingTime(null); navigateTab('user-consultation'); }}
-              className={`flex flex-col items-center transition-colors ${currentView === 'user-consultation' ? 'text-brand-rust' : 'text-brand-ink/40 hover:text-brand-ink'}`}
+              className={`flex flex-col items-center transition-colors ${currentView === 'user-consultation' ? 'text-brand-rust' : 'text-brand-ink/50 hover:text-brand-ink'}`}
             >
               <Calendar size={24} strokeWidth={currentView === 'user-consultation' ? 2.5 : 2} />
-              <span className="text-[10px] font-medium mt-1">Consultation</span>
+              <span className="text-[10px] font-medium mt-1">{t('nav.consultation')}</span>
             </button>
-          </div>
+          </nav>
         )}
 
         {/* Bottom Navigation (Only on Dashboard) */}
         {['queue', 'schedule', 'profile', 'clients', 'client-detail'].includes(currentView) && (
-          <div className="bg-brand-bg border-t border-brand-border px-6 py-4 flex justify-between items-center pb-8">
+          <nav aria-label="Professional navigation" className="bg-brand-bg border-t border-brand-border px-6 py-4 flex justify-between items-center pb-8">
             <button 
               onClick={() => navigateTab('queue')}
-              className={`flex flex-col items-center transition-colors ${currentView === 'queue' ? 'text-brand-rust' : 'text-brand-ink/40 hover:text-brand-ink'}`}
+              className={`flex flex-col items-center transition-colors ${currentView === 'queue' ? 'text-brand-rust' : 'text-brand-ink/50 hover:text-brand-ink'}`}
             >
               <Home size={24} strokeWidth={currentView === 'queue' ? 2.5 : 2} />
               <span className="text-[10px] font-medium mt-1">Queue</span>
             </button>
             <button 
               onClick={() => navigateTab('clients')}
-              className={`flex flex-col items-center transition-colors ${['clients', 'client-detail'].includes(currentView) ? 'text-brand-rust' : 'text-brand-ink/40 hover:text-brand-ink'}`}
+              className={`flex flex-col items-center transition-colors ${['clients', 'client-detail'].includes(currentView) ? 'text-brand-rust' : 'text-brand-ink/50 hover:text-brand-ink'}`}
             >
               <Users size={24} strokeWidth={['clients', 'client-detail'].includes(currentView) ? 2.5 : 2} />
               <span className="text-[10px] font-medium mt-1">Clients</span>
             </button>
             <button 
               onClick={() => navigateTab('schedule')}
-              className={`flex flex-col items-center transition-colors ${currentView === 'schedule' ? 'text-brand-rust' : 'text-brand-ink/40 hover:text-brand-ink'}`}
+              className={`flex flex-col items-center transition-colors ${currentView === 'schedule' ? 'text-brand-rust' : 'text-brand-ink/50 hover:text-brand-ink'}`}
             >
               <Calendar size={24} strokeWidth={currentView === 'schedule' ? 2.5 : 2} />
               <span className="text-[10px] font-medium mt-1">Schedule</span>
             </button>
-            <button 
+            <button
+              aria-current={currentView === 'profile' ? 'page' : undefined}
               onClick={() => navigateTab('profile')}
-              className={`flex flex-col items-center transition-colors ${currentView === 'profile' ? 'text-brand-rust' : 'text-brand-ink/40 hover:text-brand-ink'}`}
+              className={`flex flex-col items-center transition-colors ${currentView === 'profile' ? 'text-brand-rust' : 'text-brand-ink/50 hover:text-brand-ink'}`}
             >
-              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-serif ${currentView === 'profile' ? 'bg-brand-rust text-white' : 'bg-brand-surface-alt border border-brand-border text-brand-ink'}`}>
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-serif ${currentView === 'profile' ? 'bg-brand-rust text-[#FDF6F0]' : 'bg-brand-surface-alt border border-brand-border text-brand-ink'}`}>
                 Dr
               </div>
               <span className="text-[10px] font-medium mt-1">Profile</span>
             </button>
+          </nav>
+        )}
+
+        {/* Sign-Up Prompt Modal */}
+        {showSignUpPrompt && (
+          <div className="absolute inset-0 bg-black/40 z-50 flex items-end justify-center" onClick={() => setShowSignUpPrompt(false)}>
+            <div className="bg-brand-bg rounded-t-3xl w-full p-6 pb-8 shadow-xl" onClick={e => e.stopPropagation()}>
+              <div className="w-10 h-1 bg-brand-border rounded-full mx-auto mb-6"></div>
+              <div className="text-center">
+                <div className="w-12 h-12 rounded-full bg-brand-rust/10 flex items-center justify-center mx-auto mb-4">
+                  <Heart size={20} className="text-brand-rust" />
+                </div>
+                <h3 className="font-serif text-xl font-semibold text-brand-ink mb-2">{t('auth.join')}</h3>
+                <p className="text-sm text-brand-ink/60 mb-6">{t('auth.joinDesc')}</p>
+                <button
+                  onClick={() => { setUserType('user'); setUserName('Sita'); setShowSignUpPrompt(false); }}
+                  className="w-full py-4 rounded-2xl bg-brand-rust text-[#FDF6F0] font-semibold text-sm shadow-sm mb-3"
+                >
+                  {t('auth.createFree')}
+                </button>
+                <button
+                  onClick={() => setShowSignUpPrompt(false)}
+                  className="w-full py-3 text-sm text-brand-ink/50"
+                >
+                  {t('auth.continueBrowsing')}
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -389,7 +576,7 @@ function DemoSelectScreen({ onSelect }: { onSelect: (role: 'pro' | 'user') => vo
   return (
     <div className="p-8 flex flex-col h-full justify-center items-center text-center bg-brand-bg">
       <div className="mb-12">
-        <div className="w-16 h-16 bg-brand-rust text-white rounded-2xl flex items-center justify-center font-serif text-3xl shadow-md mx-auto mb-6">
+        <div className="w-16 h-16 bg-brand-rust text-[#FDF6F0] rounded-2xl flex items-center justify-center font-serif text-3xl shadow-md mx-auto mb-6">
           S
         </div>
         <h1 className="font-serif text-4xl font-semibold tracking-tight text-brand-ink mb-2">Sahara</h1>
@@ -397,15 +584,15 @@ function DemoSelectScreen({ onSelect }: { onSelect: (role: 'pro' | 'user') => vo
       </div>
 
       <div className="w-full space-y-4">
-        <button 
+        <button
           onClick={() => onSelect('user')}
-          className="w-full bg-brand-surface border border-brand-border hover:bg-brand-surface-alt rounded-2xl p-6 text-left transition-colors shadow-sm group"
+          className="w-full bg-brand-rust rounded-2xl p-6 text-left transition-colors shadow-sm group"
         >
           <div className="flex items-center justify-between mb-2">
-            <h2 className="font-serif text-xl font-semibold text-brand-ink">Patient / Family</h2>
-            <ArrowRight size={20} className="text-brand-rust opacity-0 group-hover:opacity-100 transition-opacity" />
+            <h2 className="font-serif text-xl font-semibold text-[#FDF6F0]">Patient / Family</h2>
+            <ArrowRight size={20} className="text-[#FDF6F0]/70" />
           </div>
-          <p className="text-sm text-brand-ink/60">Community feed, anonymous browsing, and intake flow.</p>
+          <p className="text-sm text-[#FDF6F0]/70">Community feed, anonymous browsing, and intake flow.</p>
         </button>
 
         <button 
@@ -423,6 +610,57 @@ function DemoSelectScreen({ onSelect }: { onSelect: (role: 'pro' | 'user') => vo
   );
 }
 
+function WelcomeScreen({ onCreateAccount, onLogin, onExplore, t }: {
+  onCreateAccount: () => void;
+  onLogin: () => void;
+  onExplore: () => void;
+  t: (key: string) => string;
+}) {
+  return (
+    <div className="flex flex-col h-full bg-brand-bg items-center justify-center text-center px-8">
+      <div className="w-16 h-16 rounded-full bg-brand-rust/10 flex items-center justify-center mb-6">
+        <Heart size={28} className="text-brand-rust" />
+      </div>
+
+      <h1 className="font-serif text-3xl font-semibold text-brand-ink mb-2">{t('welcome.headline')}</h1>
+      <p className="font-serif text-xl text-brand-rust mb-3 italic">{t('welcome.mapani')}</p>
+      <p className="text-sm text-brand-ink/60 leading-relaxed mb-10 max-w-xs">
+        {t('welcome.subtitle')}
+      </p>
+
+      <div className="w-full space-y-3 mb-6">
+        <button
+          onClick={onCreateAccount}
+          className="w-full py-4 rounded-2xl bg-brand-rust text-[#FDF6F0] font-semibold text-sm shadow-sm flex items-center justify-center gap-2"
+        >
+          <Users size={16} />
+          {t('welcome.createAccount')}
+        </button>
+        <button
+          onClick={onLogin}
+          className="w-full py-4 rounded-2xl bg-brand-surface border border-brand-border text-brand-ink font-semibold text-sm"
+        >
+          {t('welcome.login')}
+        </button>
+      </div>
+
+      <div className="flex items-center gap-4 w-full mb-6">
+        <div className="flex-1 h-px bg-brand-border"></div>
+        <span className="text-xs text-brand-ink/50">or</span>
+        <div className="flex-1 h-px bg-brand-border"></div>
+      </div>
+
+      <button
+        onClick={onExplore}
+        className="flex items-center gap-2 text-sm font-medium text-brand-ink/60 hover:text-brand-ink transition-colors"
+      >
+        <Info size={14} />
+        {t('welcome.explore')}
+      </button>
+    </div>
+  );
+}
+
 function HelpScreen({ onBack, onHome }: { onBack: () => void, onHome: () => void }) {
   return (
     <div className="flex flex-col h-full bg-brand-bg">
@@ -430,7 +668,8 @@ function HelpScreen({ onBack, onHome }: { onBack: () => void, onHome: () => void
       <div className="px-6 py-6 flex items-center gap-4">
         <button
           onClick={onBack}
-          className="w-10 h-10 rounded-full bg-brand-surface flex items-center justify-center text-brand-ink border border-brand-border hover:bg-brand-surface-alt transition-colors"
+          aria-label="Go back"
+          className="w-11 h-11 rounded-full bg-brand-surface flex items-center justify-center text-brand-ink border border-brand-border hover:bg-brand-surface-alt transition-colors"
         >
           <ChevronLeft size={20} />
         </button>
@@ -514,26 +753,47 @@ function HelpScreen({ onBack, onHome }: { onBack: () => void, onHome: () => void
   );
 }
 
-function UserHomeScreen({ onStartChat, onExplore }: { onStartChat: (context: string) => void, onExplore: () => void }) {
+function UserHomeScreen({ onStartChat, onExplore, userType, userName, language, setLanguage, t }: { onStartChat: (context: string) => void, onExplore: () => void, userType: 'guest' | 'user', userName: string, language: Language, setLanguage: (l: Language) => void, t: (key: string) => string }) {
   return (
     <div className="flex flex-col h-full bg-brand-bg relative pb-24">
       {/* Header */}
       <div className="px-6 py-6 flex items-center justify-between border-b border-brand-border">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-brand-rust text-white rounded-full flex items-center justify-center font-serif text-lg shadow-sm">
+          <div className="w-8 h-8 bg-brand-rust text-[#FDF6F0] rounded-full flex items-center justify-center font-serif text-lg shadow-sm">
             S
           </div>
           <span className="font-serif text-xl font-semibold text-brand-ink">Sahara</span>
         </div>
-        <div className="w-8 h-8 bg-brand-surface border border-brand-border text-brand-rust rounded-full flex items-center justify-center font-serif text-sm shadow-sm">
-          S
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setLanguage(language === 'en' ? 'ne' : 'en')}
+            aria-label={`Switch to ${language === 'en' ? 'Nepali' : 'English'}`}
+            className="w-8 h-8 rounded-full bg-brand-surface border border-brand-border flex items-center justify-center text-[10px] font-bold text-brand-ink/60 hover:bg-brand-surface-alt transition-colors"
+          >
+            {language === 'en' ? 'ने' : 'EN'}
+          </button>
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-serif text-sm shadow-sm ${
+            userType === 'guest'
+              ? 'bg-brand-ink/10 border border-brand-border text-brand-ink/50'
+              : 'bg-brand-surface border border-brand-border text-brand-rust'
+          }`}>
+            {userType === 'guest' ? '?' : userName.charAt(0)}
+          </div>
         </div>
       </div>
+      {userType === 'guest' && (
+        <div className="px-6 pt-2">
+          <div className="flex items-center gap-2 text-[10px] text-brand-ink/50">
+            <div className="w-1.5 h-1.5 rounded-full bg-brand-ink/20"></div>
+            {t('auth.guestLabel')}
+          </div>
+        </div>
+      )}
 
       <div className="px-6 pb-6">
-        <p className="text-brand-rust italic text-sm mb-1">आज मनमा के छ?</p>
-        <h1 className="font-serif text-3xl font-semibold text-brand-ink mb-2 tracking-tight">What brings you here today?</h1>
-        <p className="text-brand-ink/60 text-sm mb-8">A quiet space. No labels, no judgment.</p>
+        <p className="text-brand-rust italic text-sm mb-1">{t('home.nepali')}</p>
+        <h1 className="font-serif text-3xl font-semibold text-brand-ink mb-2 tracking-tight">{t('home.heading')}</h1>
+        <p className="text-brand-ink/60 text-sm mb-8">{t('home.subheading')}</p>
 
         <div className="space-y-4 mb-10">
           <button onClick={() => onStartChat('family')} className="w-full bg-brand-surface border border-brand-border hover:bg-brand-surface-alt rounded-2xl p-5 text-left transition-colors shadow-sm flex items-center gap-4 group">
@@ -541,10 +801,10 @@ function UserHomeScreen({ onStartChat, onExplore }: { onStartChat: (context: str
               <Users size={20} />
             </div>
             <div className="flex-1">
-              <h3 className="font-serif text-lg font-semibold text-brand-ink mb-0.5">I'm concerned about someone I love</h3>
-              <p className="text-xs text-brand-ink/60">For family members who noticed a change</p>
+              <h3 className="font-serif text-lg font-semibold text-brand-ink mb-0.5 line-clamp-2">{t('home.door.family.title')}</h3>
+              <p className="text-xs text-brand-ink/60">{t('home.door.family.desc')}</p>
             </div>
-            <ArrowRight size={16} className="text-brand-ink/20 group-hover:text-brand-rust transition-colors" />
+            <ArrowRight size={16} className="text-brand-ink/20 group-hover:text-brand-rust transition-colors shrink-0" />
           </button>
 
           <button onClick={() => onStartChat('self')} className="w-full bg-brand-surface border border-brand-border hover:bg-brand-surface-alt rounded-2xl p-5 text-left transition-colors shadow-sm flex items-center gap-4 group">
@@ -552,10 +812,10 @@ function UserHomeScreen({ onStartChat, onExplore }: { onStartChat: (context: str
               <User size={20} />
             </div>
             <div className="flex-1">
-              <h3 className="font-serif text-lg font-semibold text-brand-ink mb-0.5">I want to understand myself better</h3>
-              <p className="text-xs text-brand-ink/60">A private conversation with Maan</p>
+              <h3 className="font-serif text-lg font-semibold text-brand-ink mb-0.5 line-clamp-2">{t('home.door.self.title')}</h3>
+              <p className="text-xs text-brand-ink/60">{t('home.door.self.desc')}</p>
             </div>
-            <ArrowRight size={16} className="text-brand-ink/20 group-hover:text-brand-green transition-colors" />
+            <ArrowRight size={16} className="text-brand-ink/20 group-hover:text-brand-green transition-colors shrink-0" />
           </button>
 
           <button onClick={() => onStartChat('share')} className="w-full bg-brand-rust/10 border border-brand-rust/20 hover:bg-brand-rust/20 rounded-2xl p-5 text-left transition-colors shadow-sm flex items-center gap-4 group">
@@ -563,14 +823,14 @@ function UserHomeScreen({ onStartChat, onExplore }: { onStartChat: (context: str
               <Edit3 size={20} />
             </div>
             <div className="flex-1">
-              <h3 className="font-serif text-lg font-semibold text-brand-ink mb-0.5">Share your experience</h3>
-              <p className="text-xs text-brand-ink/60">Talk to our AI companion. Your words could help someone going through the same thing.</p>
+              <h3 className="font-serif text-lg font-semibold text-brand-ink mb-0.5 line-clamp-2">{t('home.door.share.title')}</h3>
+              <p className="text-xs text-brand-ink/60">{t('home.door.share.desc')}</p>
             </div>
           </button>
         </div>
 
         <div className="mb-4">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-brand-ink/40 mb-4">From the community</h3>
+          <h3 className="text-xs font-bold uppercase tracking-wider text-brand-ink/50 mb-4">{t('home.community')}</h3>
           
           <div className="space-y-4">
             <div className="bg-brand-surface border border-brand-border rounded-2xl p-5 shadow-sm">
@@ -595,7 +855,7 @@ function UserHomeScreen({ onStartChat, onExplore }: { onStartChat: (context: str
           <button onClick={onExplore} className="w-full text-center py-4 text-sm font-medium text-brand-rust hover:underline mt-2">
             See all community stories &rarr;
           </button>
-          <p className="text-center text-brand-ink/40 mt-1" style={{ fontSize: '10px' }}>
+          <p className="text-center text-brand-ink/50 mt-1" style={{ fontSize: '10px' }}>
             Sahara organizes observations — it does not diagnose or replace professional care.
           </p>
         </div>
@@ -609,14 +869,15 @@ function LoginScreen({ onLogin, onBack }: { onLogin: () => void, onBack: () => v
     <div className="p-8 flex flex-col h-full relative">
       <button 
         onClick={onBack}
-        className="absolute top-6 left-6 w-10 h-10 rounded-full bg-brand-surface flex items-center justify-center text-brand-ink border border-brand-border hover:bg-brand-surface-alt transition-colors z-10"
+        aria-label="Go back"
+        className="absolute top-6 left-6 w-11 h-11 rounded-full bg-brand-surface flex items-center justify-center text-brand-ink border border-brand-border hover:bg-brand-surface-alt transition-colors z-10"
       >
         <ChevronLeft size={20} />
       </button>
 
       <div className="flex-1 mt-16">
         <div className="flex items-center gap-3 mb-8">
-          <div className="w-12 h-12 bg-brand-rust text-white rounded-xl flex items-center justify-center font-serif text-2xl shadow-sm">
+          <div className="w-12 h-12 bg-brand-rust text-[#FDF6F0] rounded-xl flex items-center justify-center font-serif text-2xl shadow-sm">
             S
           </div>
           <h1 className="font-serif text-3xl font-semibold tracking-tight text-brand-ink">Sahara</h1>
@@ -633,18 +894,20 @@ function LoginScreen({ onLogin, onBack }: { onLogin: () => void, onBack: () => v
 
         <div className="space-y-4">
           <div className="bg-brand-surface rounded-2xl p-1 border border-brand-border shadow-sm">
-            <input 
-              type="email" 
-              placeholder="Email address" 
-              className="w-full bg-transparent px-4 py-3 text-brand-ink placeholder:text-brand-ink/40 focus:outline-none"
+            <input
+              type="email"
+              placeholder="Email address"
+              aria-label="Email address"
+              className="w-full bg-transparent px-4 py-3 text-brand-ink placeholder:text-brand-ink/50 focus:outline-none"
               defaultValue="dr.sharma@sahara.health"
             />
           </div>
           <div className="bg-brand-surface rounded-2xl p-1 border border-brand-border shadow-sm">
-            <input 
-              type="password" 
-              placeholder="Password" 
-              className="w-full bg-transparent px-4 py-3 text-brand-ink placeholder:text-brand-ink/40 focus:outline-none"
+            <input
+              type="password"
+              placeholder="Password"
+              aria-label="Password"
+              className="w-full bg-transparent px-4 py-3 text-brand-ink placeholder:text-brand-ink/50 focus:outline-none"
               defaultValue="••••••••"
             />
           </div>
@@ -699,7 +962,8 @@ function JournalPinScreen({ onUnlock, onSkip, onBack }: { onUnlock: () => void, 
     <div className="flex flex-col h-full bg-brand-bg items-center justify-center px-8 relative">
       <button
         onClick={onBack}
-        className="absolute top-6 left-6 w-10 h-10 rounded-full bg-brand-surface flex items-center justify-center text-brand-ink border border-brand-border hover:bg-brand-surface-alt transition-colors"
+        aria-label="Go back"
+        className="absolute top-6 left-6 w-11 h-11 rounded-full bg-brand-surface flex items-center justify-center text-brand-ink border border-brand-border hover:bg-brand-surface-alt transition-colors"
       >
         <ChevronLeft size={20} />
       </button>
@@ -710,7 +974,7 @@ function JournalPinScreen({ onUnlock, onSkip, onBack }: { onUnlock: () => void, 
 
       <h2 className="font-serif text-2xl font-semibold text-brand-ink mb-2">Private Journal</h2>
       <p className="text-sm text-brand-ink/60 text-center mb-2">Your reflections are protected.</p>
-      <p className="text-[10px] text-brand-ink/40 text-center mb-8 max-w-[240px] leading-relaxed">
+      <p className="text-[10px] text-brand-ink/50 text-center mb-8 max-w-[240px] leading-relaxed">
         In homes where phones are shared, your privacy matters. No one — not even Sahara — can read your journal without your PIN.
       </p>
 
@@ -745,7 +1009,7 @@ function JournalPinScreen({ onUnlock, onSkip, onBack }: { onUnlock: () => void, 
         })}
       </div>
 
-      <button onClick={onSkip} className="text-xs text-brand-ink/40 hover:text-brand-ink/60 transition-colors">
+      <button onClick={onSkip} className="text-xs text-brand-ink/50 hover:text-brand-ink/60 transition-colors">
         Set up later →
       </button>
 
@@ -760,7 +1024,8 @@ function JournalScreen({ entries, onBack }: { entries: any[], onBack: () => void
       <div className="bg-brand-bg/90 backdrop-blur-md z-10 px-6 py-6 border-b border-brand-border flex items-center gap-4 sticky top-0">
         <button 
           onClick={onBack}
-          className="w-10 h-10 rounded-full bg-brand-surface flex items-center justify-center text-brand-ink border border-brand-border hover:bg-brand-surface-alt transition-colors shrink-0"
+          aria-label="Go back"
+          className="w-11 h-11 rounded-full bg-brand-surface flex items-center justify-center text-brand-ink border border-brand-border hover:bg-brand-surface-alt transition-colors shrink-0"
         >
           <ChevronLeft size={20} />
         </button>
@@ -772,7 +1037,7 @@ function JournalScreen({ entries, onBack }: { entries: any[], onBack: () => void
       
       <div className="flex-1 overflow-y-auto p-6 space-y-4 pb-24">
         {entries.map((entry: any) => (
-          <div key={entry.id} className="bg-brand-surface p-5 rounded-[1.5rem] shadow-sm border border-brand-border">
+          <div key={entry.id} className="bg-brand-surface p-5 rounded-2xl shadow-sm border border-brand-border">
             <div className="flex justify-between items-start mb-3">
               <span className="text-xs font-medium text-brand-ink/50">{entry.date}</span>
               <span className="text-xs font-medium bg-brand-bg border border-brand-border px-2 py-1 rounded-md text-brand-rust flex items-center gap-1">
@@ -799,7 +1064,7 @@ function JournalScreen({ entries, onBack }: { entries: any[], onBack: () => void
           <div className="text-center py-12">
             <BookOpen size={48} className="mx-auto text-brand-ink/20 mb-4" />
             <p className="text-brand-ink/60 text-sm">Your journal is empty.</p>
-            <p className="text-brand-ink/40 text-xs mt-1">Chat with Maan to generate insights.</p>
+            <p className="text-brand-ink/50 text-xs mt-1">Chat with Maan to generate insights.</p>
           </div>
         )}
       </div>
@@ -807,14 +1072,33 @@ function JournalScreen({ entries, onBack }: { entries: any[], onBack: () => void
   );
 }
 
-function CommunityFeedScreen({ onBack, onStartShare }: { onBack: () => void, onStartShare: () => void }) {
+function CommunityFeedScreen({ onBack, onStartShare, userType, userName, onAuthRequired, t }: { onBack: () => void, onStartShare: () => void, userType: 'guest' | 'user', userName: string, onAuthRequired: () => void, t: (key: string) => string }) {
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
   const [activeFilter, setActiveFilter] = useState('All');
+  const [selectedStory, setSelectedStory] = useState<any>(null);
+  const [likedPosts, setLikedPosts] = useState<Set<number | string>>(new Set());
+  const [postCounts, setPostCounts] = useState<Record<string | number, number>>({});
   const filters = ['All', 'Social Withdrawal', 'Academic Pressure', 'Stigma & Resistance', 'Social Isolation'];
 
   const handleInteract = () => {
     setShowAuthPrompt(true);
     setTimeout(() => setShowAuthPrompt(false), 3000);
+  };
+
+  const handleMaPani = (postId: number | string, originalCount: number) => {
+    setLikedPosts(prev => {
+      const next = new Set(prev);
+      if (next.has(postId)) {
+        next.delete(postId);
+      } else {
+        next.add(postId);
+      }
+      return next;
+    });
+    setPostCounts(prev => ({
+      ...prev,
+      [postId]: likedPosts.has(postId) ? originalCount : originalCount + 1
+    }));
   };
 
   const FEED_POSTS: Array<{
@@ -908,6 +1192,59 @@ function CommunityFeedScreen({ onBack, onStartShare }: { onBack: () => void, onS
 
   return (
     <div className="flex flex-col h-full bg-brand-bg relative">
+      {/* Story Detail Overlay */}
+      {selectedStory && selectedStory.type === 'story' && (
+        <div className="absolute inset-0 bg-brand-bg z-40 flex flex-col overflow-y-auto">
+          <div className="sticky top-0 bg-brand-bg/90 backdrop-blur-md z-10 px-6 py-4 border-b border-brand-border flex items-center gap-3">
+            <button onClick={() => setSelectedStory(null)} aria-label="Go back" className="w-11 h-11 rounded-full bg-brand-surface flex items-center justify-center text-brand-ink border border-brand-border hover:bg-brand-surface-alt transition-colors">
+              <ChevronLeft size={20} />
+            </button>
+            <span className="text-[10px] font-medium uppercase tracking-wider text-brand-ink/50 bg-brand-bg px-2 py-1 rounded-md border border-brand-border">{selectedStory.tag}</span>
+          </div>
+
+          <div className="p-6 space-y-5">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-brand-rust/10 flex items-center justify-center"><Users size={16} className="text-brand-rust" /></div>
+              <div>
+                <p className="text-sm font-semibold text-brand-ink">{selectedStory.author}</p>
+                <p className="text-xs text-brand-ink/50">{selectedStory.time}</p>
+              </div>
+            </div>
+
+            <p className="text-base text-brand-ink/80 leading-relaxed">"{selectedStory.content}"</p>
+
+            <div className="bg-brand-bg rounded-xl p-4 border border-brand-border/50">
+              <div className="flex items-center gap-1.5 mb-2 text-brand-rust">
+                <Sparkles size={14} />
+                <span className="text-[10px] font-bold uppercase tracking-wider">AI-Organized Pattern</span>
+              </div>
+              <p className="text-sm text-brand-ink/70 leading-relaxed">{selectedStory.aiSummary}</p>
+            </div>
+
+            <div className="flex items-center justify-between py-4 border-y border-brand-border/60">
+              <button
+                onClick={() => { if (userType === 'guest') { onAuthRequired(); return; } handleMaPani(selectedStory.id, selectedStory.meTooCount!); }}
+                className={`flex items-center gap-2 transition-colors ${likedPosts.has(selectedStory.id) ? 'text-brand-rust' : 'text-brand-ink/50 hover:text-brand-rust'}`}
+              >
+                <Heart size={18} fill={likedPosts.has(selectedStory.id) ? 'currentColor' : 'none'} />
+                <span className="text-sm font-medium">{postCounts[selectedStory.id] ?? selectedStory.meTooCount} {t('chautari.maPani')}</span>
+              </button>
+              <button onClick={handleInteract} className="flex items-center gap-1.5 text-brand-green bg-brand-green/10 px-3 py-1.5 rounded-full">
+                <ShieldCheck size={14} />
+                <span className="text-xs font-medium">{selectedStory.proResponses} Pro Responses</span>
+              </button>
+            </div>
+
+            <div className="bg-brand-rust/5 rounded-2xl p-5 border border-brand-rust/10 text-center">
+              <p className="text-sm text-brand-ink/70 mb-3">Going through something similar?</p>
+              <button onClick={() => { if (userType === 'guest') { onAuthRequired(); return; } setSelectedStory(null); onStartShare(); }} className="bg-brand-rust text-[#FDF6F0] rounded-xl px-6 py-3 text-sm font-medium">
+                Share Your Experience
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Auth Prompt Toast */}
       {showAuthPrompt && (
         <div className="absolute top-20 left-4 right-4 bg-brand-ink text-white p-4 rounded-2xl shadow-xl z-50 flex items-start gap-3">
@@ -922,13 +1259,13 @@ function CommunityFeedScreen({ onBack, onStartShare }: { onBack: () => void, onS
       {/* Header */}
       <div className="bg-brand-bg/90 backdrop-blur-md z-10 px-6 py-6 border-b border-brand-border sticky top-0">
         <div className="flex items-center justify-between mb-4">
-          <button onClick={onBack} className="w-10 h-10 rounded-full bg-brand-surface flex items-center justify-center text-brand-ink border border-brand-border hover:bg-brand-surface-alt transition-colors">
+          <button onClick={onBack} aria-label="Go back" className="w-11 h-11 rounded-full bg-brand-surface flex items-center justify-center text-brand-ink border border-brand-border hover:bg-brand-surface-alt transition-colors">
             <ChevronLeft size={20} />
           </button>
-          <div className="w-10 h-10 bg-brand-rust text-white rounded-full flex items-center justify-center font-serif text-xl shadow-sm">S</div>
+          <div className="w-10 h-10 bg-brand-rust text-[#FDF6F0] rounded-full flex items-center justify-center font-serif text-xl shadow-sm">S</div>
         </div>
         <h1 className="font-serif text-3xl font-semibold text-brand-ink mb-1">Chautari / Ma Pani</h1>
-        <p className="text-brand-ink/60 text-sm">"Me Too" — You are not alone in this.</p>
+        <p className="text-brand-ink/60 text-sm">{t('chautari.subtitle')}</p>
       </div>
 
       {/* Filters */}
@@ -951,11 +1288,11 @@ function CommunityFeedScreen({ onBack, onStartShare }: { onBack: () => void, onS
       {/* Search */}
       <div className="px-6 pt-4">
         <div className="bg-brand-surface rounded-2xl p-1 border border-brand-border shadow-sm flex items-center px-3">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-brand-ink/40 mr-2 shrink-0"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-brand-ink/50 mr-2 shrink-0"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input
             type="text"
             placeholder="Search stories and insights..."
-            className="w-full bg-transparent py-3 text-sm text-brand-ink placeholder:text-brand-ink/40 focus:outline-none"
+            className="w-full bg-transparent py-3 text-sm text-brand-ink placeholder:text-brand-ink/50 focus:outline-none"
           />
         </div>
       </div>
@@ -964,13 +1301,18 @@ function CommunityFeedScreen({ onBack, onStartShare }: { onBack: () => void, onS
       <div className="flex-1 overflow-y-auto p-6 space-y-4 pb-20">
         {/* Share CTA */}
         <div
-          onClick={onStartShare}
+          onClick={() => { if (userType === 'guest') { onAuthRequired(); return; } onStartShare(); }}
           className="bg-brand-surface border border-brand-border rounded-2xl p-4 flex items-center gap-3 cursor-pointer hover:bg-brand-surface-alt transition-colors shadow-sm"
         >
-          <div className="w-10 h-10 rounded-full bg-brand-rust/10 flex items-center justify-center text-brand-rust shrink-0">
-            <Edit3 size={18} />
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center font-serif text-sm shrink-0 ${
+            userType === 'guest' ? 'bg-brand-ink/10 text-brand-ink/50' : 'bg-brand-rust/10 text-brand-rust'
+          }`}>
+            {userType === 'guest' ? '?' : userName.charAt(0)}
           </div>
-          <span className="text-sm text-brand-ink/60 flex-1">What's on your mind?</span>
+          {userType === 'guest'
+            ? <span className="text-sm text-brand-ink/60 flex-1">{t('chautari.signUpToShare')}</span>
+            : <span className="text-sm text-brand-ink/60 flex-1">{t('chautari.shareCta')}</span>
+          }
           <span className="text-xs font-medium text-brand-rust">Share →</span>
         </div>
 
@@ -979,7 +1321,7 @@ function CommunityFeedScreen({ onBack, onStartShare }: { onBack: () => void, onS
           // Expert card
           if (post.type === 'expert') {
             return (
-              <div key={post.id} className="bg-brand-surface rounded-[1.5rem] p-5 border border-brand-border shadow-sm border-l-4 border-l-brand-green">
+              <div key={post.id} className="bg-brand-surface rounded-2xl p-5 border border-brand-border shadow-sm border-l-4 border-l-brand-green">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-10 h-10 rounded-full bg-brand-green/10 flex items-center justify-center font-serif text-brand-green text-sm font-semibold">
                     {post.name!.split(' ').map(n => n[0]).join('')}
@@ -991,7 +1333,7 @@ function CommunityFeedScreen({ onBack, onStartShare }: { onBack: () => void, onS
                 </div>
                 <p className="text-sm text-brand-ink/80 leading-relaxed">{post.content}</p>
                 <div className="mt-3">
-                  <span className="text-[10px] font-medium uppercase tracking-wider text-brand-ink/40 bg-brand-bg px-2 py-1 rounded-md border border-brand-border/50">{post.tag}</span>
+                  <span className="text-[10px] font-medium uppercase tracking-wider text-brand-ink/50 bg-brand-bg px-2 py-1 rounded-md border border-brand-border/50">{post.tag}</span>
                 </div>
               </div>
             );
@@ -999,7 +1341,7 @@ function CommunityFeedScreen({ onBack, onStartShare }: { onBack: () => void, onS
 
           // Story card — human story FIRST, AI summary SECOND
           return (
-            <div key={post.id} className="bg-brand-surface rounded-[1.5rem] p-5 border border-brand-border shadow-sm">
+            <div key={post.id} className="bg-brand-surface rounded-2xl p-5 border border-brand-border shadow-sm">
               <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-full bg-brand-rust/10 flex items-center justify-center">
@@ -1007,7 +1349,7 @@ function CommunityFeedScreen({ onBack, onStartShare }: { onBack: () => void, onS
                   </div>
                   <div>
                     <p className="text-xs font-semibold text-brand-ink">{post.author}</p>
-                    <p className="text-[10px] text-brand-ink/40">{post.time}</p>
+                    <p className="text-[10px] text-brand-ink/50">{post.time}</p>
                   </div>
                 </div>
                 <span className="text-[10px] font-medium uppercase tracking-wider text-brand-ink/50 bg-brand-bg px-2 py-1 rounded-md border border-brand-border">
@@ -1034,20 +1376,28 @@ function CommunityFeedScreen({ onBack, onStartShare }: { onBack: () => void, onS
               </div>
 
               <div className="flex items-center justify-between pt-4 border-t border-brand-border/60">
-                <button
-                  onClick={handleInteract}
-                  className="flex items-center gap-1.5 text-brand-ink/50 hover:text-brand-rust transition-colors"
-                >
-                  <Heart size={16} />
-                  <span className="text-xs font-medium">{post.meTooCount} Ma Pani</span>
-                </button>
-                <button
-                  onClick={handleInteract}
-                  className="flex items-center gap-1.5 text-brand-green hover:text-brand-green/80 transition-colors bg-brand-green/10 px-3 py-1.5 rounded-full"
-                >
-                  <ShieldCheck size={14} />
-                  <span className="text-xs font-medium">{post.proResponses} Pro Responses</span>
-                </button>
+                <div className="flex flex-col items-start gap-0.5">
+                  <button
+                    onClick={() => { if (userType === 'guest') { onAuthRequired(); return; } handleMaPani(post.id, post.meTooCount!); }}
+                    className={`flex items-center gap-1.5 transition-colors ${likedPosts.has(post.id) ? 'text-brand-rust' : 'text-brand-ink/50 hover:text-brand-rust'}`}
+                  >
+                    <Heart size={16} fill={likedPosts.has(post.id) ? 'currentColor' : 'none'} />
+                    <span className="text-xs font-medium">{postCounts[post.id] ?? post.meTooCount} {t('chautari.maPani')}</span>
+                  </button>
+                  {userType === 'guest' && (
+                    <span className="text-[9px] text-brand-ink/30">{t('auth.signUpToRelate')}</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => setSelectedStory(post)} className="text-xs font-medium text-brand-rust hover:underline">Read full story →</button>
+                  <button
+                    onClick={handleInteract}
+                    className="flex items-center gap-1.5 text-brand-green hover:text-brand-green/80 transition-colors bg-brand-green/10 px-3 py-1.5 rounded-full"
+                  >
+                    <ShieldCheck size={14} />
+                    <span className="text-xs font-medium">{post.proResponses} Pro Responses</span>
+                  </button>
+                </div>
               </div>
             </div>
           );
@@ -1057,11 +1407,11 @@ function CommunityFeedScreen({ onBack, onStartShare }: { onBack: () => void, onS
   );
 }
 
-function AiChatScreen({ context, onBack, onExplore, onConsult, onSaveJournal }: { context: string, onBack: () => void, onExplore: () => void, onConsult: () => void, onSaveJournal: (summary: string, mood: string, techniques: string[]) => void }) {
+function AiChatScreen({ context, onBack, onExplore, onConsult, onSaveJournal, onGenerateSummary }: { context: string, onBack: () => void, onExplore: () => void, onConsult: () => void, onSaveJournal: (summary: string, mood: string, techniques: string[]) => void, onGenerateSummary: (messages: { role: 'user' | 'model', text: string }[]) => void }) {
   const greetings: Record<string, string> = {
-    family: "Namaste, sathi\n\nIt takes courage to seek understanding for someone you care about. You do not need all the answers — just start by sharing what you have noticed.",
-    self: "Namaste, sathi\n\nSomething brought you here today. You do not have to explain it perfectly — just start anywhere.",
-    share: "Namaste, sathi\n\nYour experience matters — and sharing it could help someone who feels alone right now. Tell me what has been on your mind, in your own words."
+    family: "You're here because you care about someone. That already matters. Tell me what you've noticed — there are no wrong words here.",
+    self: "This is your space. No labels, no rush. What's been on your mind?",
+    share: "Your experience could help someone who feels alone right now. Share what feels right."
   };
 
   const [messages, setMessages] = useState<{role: 'ai' | 'user' | 'action', text?: string, actions?: any[]}[]>([
@@ -1161,12 +1511,18 @@ function AiChatScreen({ context, onBack, onExplore, onConsult, onSaveJournal }: 
 
       const responseText = await generateChatResponse(chatHistory, context);
 
+      const userMessageCount = newMessages.filter(m => m.role === 'user').length;
+
       const actions = [
         { id: 'community', icon: <Users size={16} />, title: 'See community stories', subtitle: 'Others have been here too' },
         { id: 'consult', icon: <Calendar size={16} />, title: 'Talk to a professional', subtitle: "When you're ready — no pressure" },
         { id: 'journal', icon: <BookOpen size={16} />, title: 'End & Save to Journal', subtitle: "Generate private insights" },
         { id: 'continue', icon: <Edit3 size={16} />, title: 'Keep sharing', subtitle: "Tell me more, I'm listening" }
       ];
+
+      if (userMessageCount >= 3) {
+        actions.splice(1, 0, { id: 'summary', icon: <Sparkles size={16} />, title: 'Generate my summary', subtitle: 'See your observations organized by AI' });
+      }
 
       if (context === 'share' && newMessages.length > 2) {
         actions.unshift({ id: 'post', icon: <MessageCircle size={16} />, title: 'Post to Chautari', subtitle: "Share your story anonymously" });
@@ -1194,6 +1550,15 @@ function AiChatScreen({ context, onBack, onExplore, onConsult, onSaveJournal }: 
   const handleAction = (actionId: string) => {
     if (actionId === 'community') onExplore();
     if (actionId === 'consult') onConsult();
+    if (actionId === 'summary') {
+      const chatHistory = messages
+        .filter(m => m.role === 'user' || m.role === 'ai')
+        .map(m => ({
+          role: m.role === 'ai' ? 'model' as const : 'user' as const,
+          text: m.text || ''
+        }));
+      onGenerateSummary(chatHistory);
+    }
     if (actionId === 'journal') {
       // In a real app, we would ask AI to generate these based on chat history
       onSaveJournal(
@@ -1213,22 +1578,19 @@ function AiChatScreen({ context, onBack, onExplore, onConsult, onSaveJournal }: 
 
   const promptsByContext: Record<string, string[]> = {
     family: [
-      "My brother has been withdrawing from everyone lately",
-      "I don't know how to talk to my family about this",
-      "My parent seems different and I am worried",
-      "Someone I love is struggling but won't accept help"
+      "My family member has been withdrawing",
+      "I don't know how to bring it up",
+      "Is what I'm seeing serious?"
     ],
     self: [
-      "I feel empty but I do not know why",
-      "I smile on the outside but inside I am exhausted",
-      "I cannot sleep. My chest feels heavy every night.",
-      "I do not know what I am doing with my life"
+      "I've been feeling overwhelmed lately",
+      "I don't know how to describe what I feel",
+      "I want to understand myself better"
     ],
     share: [
-      "I went through something similar and want others to know they're not alone",
-      "Our family found a way through — maybe it can help someone",
-      "I wish someone had told me this when I was struggling",
-      "Here is what helped me when I did not know where to turn"
+      "I went through something similar",
+      "Here's what helped my family",
+      "I want others to know they're not alone"
     ]
   };
   const initialPrompts = promptsByContext[context] || promptsByContext.self;
@@ -1257,21 +1619,20 @@ function AiChatScreen({ context, onBack, onExplore, onConsult, onSaveJournal }: 
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
         {messages.length === 1 && (
           <div className="flex flex-col items-center text-center mb-8 mt-4">
-            <div className="w-16 h-16 bg-brand-rust/80 text-white rounded-full flex items-center justify-center font-serif text-2xl mb-4 shadow-sm">
+            <div className="w-16 h-16 bg-brand-rust/80 text-[#FDF6F0] rounded-full flex items-center justify-center font-serif text-2xl mb-4 shadow-sm">
               म
             </div>
             <p className="text-brand-green text-xs font-medium mb-2">
               {context === 'family' ? 'Caring for someone' : context === 'share' ? 'Sharing your experience' : 'Understanding myself'}
             </p>
-            <h2 className="font-serif text-2xl font-semibold text-brand-ink mb-2">Namaste, sathi</h2>
             <p className="text-sm text-brand-ink/70 max-w-[260px]">
               {context === 'family'
-                ? 'It takes courage to seek understanding for someone you care about. Just start by sharing what you have noticed.'
+                ? "You're here because you care about someone. That already matters."
                 : context === 'share'
-                ? 'Your experience matters — sharing it could help someone who feels alone right now.'
-                : 'Something brought you here today. You do not have to explain it perfectly — just start anywhere.'}
+                ? 'Your experience could help someone who feels alone right now.'
+                : "This is your space. No labels, no rush."}
             </p>
-            <p className="text-brand-ink/40 mt-2 max-w-[260px]" style={{ fontSize: '10px' }}>
+            <p className="text-brand-ink/50 mt-2 max-w-[260px]" style={{ fontSize: '10px' }}>
               Maan helps organize your thoughts — it does not diagnose or replace professional care.
             </p>
           </div>
@@ -1280,7 +1641,7 @@ function AiChatScreen({ context, onBack, onExplore, onConsult, onSaveJournal }: 
         {messages.map((msg, idx) => {
           if (msg.role === 'action') {
             return (
-              <div key={idx} className="bg-brand-surface rounded-[1.5rem] p-4 border border-brand-border shadow-sm space-y-2">
+              <div key={idx} className="bg-brand-surface rounded-2xl p-4 border border-brand-border shadow-sm space-y-2">
                 {msg.actions?.map(action => (
                   <button 
                     key={action.id}
@@ -1304,7 +1665,7 @@ function AiChatScreen({ context, onBack, onExplore, onConsult, onSaveJournal }: 
 
           return (
             <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[85%] rounded-[1.5rem] p-4 ${msg.role === 'user' ? 'bg-brand-rust/80 text-white rounded-br-sm' : 'bg-brand-surface border border-brand-border text-brand-ink rounded-bl-sm shadow-sm'}`}>
+              <div className={`max-w-[85%] rounded-2xl p-4 ${msg.role === 'user' ? 'bg-brand-rust/80 text-[#FDF6F0] rounded-br-sm' : 'bg-brand-surface border border-brand-border text-brand-ink rounded-bl-sm shadow-sm'}`}>
                 <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.text}</p>
               </div>
             </div>
@@ -1328,7 +1689,7 @@ function AiChatScreen({ context, onBack, onExplore, onConsult, onSaveJournal }: 
         
         {isLoading && (
           <div className="flex justify-start">
-            <div className="max-w-[85%] rounded-[1.5rem] p-4 bg-brand-surface border border-brand-border text-brand-ink rounded-bl-sm shadow-sm flex items-center gap-2">
+            <div className="max-w-[85%] rounded-2xl p-4 bg-brand-surface border border-brand-border text-brand-ink rounded-bl-sm shadow-sm flex items-center gap-2">
               <div className="w-2 h-2 bg-brand-rust/50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
               <div className="w-2 h-2 bg-brand-rust/50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
               <div className="w-2 h-2 bg-brand-rust/50 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
@@ -1352,9 +1713,10 @@ function AiChatScreen({ context, onBack, onExplore, onConsult, onSaveJournal }: 
               </div>
               <span className="text-sm font-medium text-red-500">Listening... (Nepali or English)</span>
             </div>
-            <button 
+            <button
               onClick={toggleRecording}
-              className="w-10 h-10 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors shrink-0 shadow-sm"
+              aria-label="Stop recording"
+              className="w-11 h-11 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors shrink-0 shadow-sm"
             >
               <Square size={16} fill="currentColor" />
             </button>
@@ -1375,21 +1737,24 @@ function AiChatScreen({ context, onBack, onExplore, onConsult, onSaveJournal }: 
               onKeyDown={(e) => e.key === 'Enter' && handleSend(inputValue)}
               disabled={isLoading}
               placeholder="Share what's on your mind..."
-              className="flex-1 bg-transparent text-sm text-brand-ink placeholder:text-brand-ink/40 focus:outline-none py-2 disabled:opacity-50"
+              aria-label="Message to Maan"
+              className="flex-1 bg-transparent text-sm text-brand-ink placeholder:text-brand-ink/50 focus:outline-none py-2 disabled:opacity-50"
             />
             {inputValue.trim() ? (
-              <button 
+              <button
                 onClick={() => handleSend(inputValue)}
+                aria-label="Send message"
                 disabled={isLoading}
-                className="w-10 h-10 rounded-full bg-brand-rust/80 text-white flex items-center justify-center hover:bg-brand-rust transition-colors shrink-0 disabled:opacity-50"
+                className="w-11 h-11 rounded-full bg-brand-rust/80 text-[#FDF6F0] flex items-center justify-center hover:bg-brand-rust transition-colors shrink-0 disabled:opacity-50"
               >
                 <Send size={16} />
               </button>
             ) : (
-              <button 
+              <button
                 onClick={toggleRecording}
+                aria-label="Voice input"
                 disabled={isLoading}
-                className="w-10 h-10 rounded-full bg-brand-surface-alt border border-brand-border text-brand-ink flex items-center justify-center hover:bg-brand-border transition-colors shrink-0 disabled:opacity-50"
+                className="w-11 h-11 rounded-full bg-brand-surface-alt border border-brand-border text-brand-ink flex items-center justify-center hover:bg-brand-border transition-colors shrink-0 disabled:opacity-50"
               >
                 <Mic size={18} />
               </button>
@@ -1401,7 +1766,118 @@ function AiChatScreen({ context, onBack, onExplore, onConsult, onSaveJournal }: 
   );
 }
 
-function DashboardScreen({ onViewBrief }: { onViewBrief: (id: string) => void }) {
+function SummaryScreen({
+  context,
+  messages,
+  generatedSummary,
+  setGeneratedSummary,
+  onConsult,
+  onBack,
+  onHome
+}: {
+  context: string,
+  messages: { role: 'user' | 'model', text: string }[],
+  generatedSummary: { summary: string; patterns: string[]; peerEvidence: string } | null,
+  setGeneratedSummary: (s: any) => void,
+  onConsult: () => void,
+  onBack: () => void,
+  onHome: () => void
+}) {
+  const [loading, setLoading] = useState(!generatedSummary);
+
+  useEffect(() => {
+    if (!generatedSummary) {
+      setLoading(true);
+      generateObservationSummary(messages, context).then(result => {
+        setGeneratedSummary(result);
+        setLoading(false);
+      });
+    }
+  }, []);
+
+  return (
+    <div className="flex flex-col h-full bg-brand-bg">
+      <div className="bg-brand-bg/90 backdrop-blur-md z-10 px-6 py-6 border-b border-brand-border sticky top-0">
+        <button onClick={onBack} aria-label="Go back" className="w-11 h-11 rounded-full bg-brand-surface flex items-center justify-center text-brand-ink border border-brand-border hover:bg-brand-surface-alt transition-colors mb-4">
+          <ChevronLeft size={20} />
+        </button>
+        <h1 className="font-serif text-2xl font-semibold text-brand-ink">Your Observations, Organized</h1>
+        <p className="text-brand-ink/60 text-sm mt-1">AI-organized from your conversation with Maan. This is not a diagnosis.</p>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-6 pb-24 space-y-5">
+        {loading ? (
+          <div className="flex flex-col items-center justify-center mt-12">
+            <div className="w-12 h-12 rounded-full bg-brand-rust/10 flex items-center justify-center text-brand-rust mb-4 animate-pulse">
+              <Sparkles size={24} />
+            </div>
+            <p className="text-sm text-brand-ink/60">Organizing your observations...</p>
+            <p className="text-[10px] text-brand-ink/50 mt-2">This uses AI to find patterns — not to diagnose.</p>
+          </div>
+        ) : generatedSummary ? (
+          <>
+            <div className="bg-brand-surface rounded-2xl p-5 border border-brand-border shadow-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <Sparkles size={16} className="text-brand-rust" />
+                <span className="text-xs font-bold uppercase tracking-wider text-brand-rust">AI-Organized Summary</span>
+              </div>
+              <p className="text-sm text-brand-ink/80 leading-relaxed">{generatedSummary.summary}</p>
+            </div>
+
+            <div className="bg-brand-surface rounded-2xl p-5 border border-brand-border shadow-sm">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-brand-ink/50 mb-3">Patterns Observed</h3>
+              <div className="space-y-2">
+                {generatedSummary.patterns.map((p, i) => (
+                  <div key={i} className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-brand-rust/10 flex items-center justify-center text-brand-rust text-xs font-bold shrink-0 mt-0.5">{i + 1}</div>
+                    <p className="text-sm text-brand-ink/70">{p}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-brand-green/10 rounded-2xl p-5 border border-brand-green/20">
+              <div className="flex items-center gap-2 mb-2">
+                <Users size={16} className="text-brand-green" />
+                <span className="text-xs font-bold uppercase tracking-wider text-brand-green">Similar Patterns on Sahara</span>
+              </div>
+              <p className="text-sm text-brand-ink/70">{generatedSummary.peerEvidence}</p>
+              <p className="text-[10px] text-brand-ink/50 mt-2">Based on anonymous community patterns. Counts are from real stories shared on this platform.</p>
+            </div>
+
+            <div className="bg-brand-bg rounded-xl p-4 border border-brand-border/50">
+              <div className="flex items-start gap-2">
+                <AlertCircle size={14} className="text-brand-ink/50 mt-0.5 shrink-0" />
+                <p className="text-[10px] text-brand-ink/50 leading-relaxed">
+                  This summary organizes what you shared — it does not diagnose, label, or categorize any condition.
+                  A licensed professional will review this with their own clinical judgment.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-brand-ink/50">What would you like to do?</h3>
+              <button onClick={onConsult} className="w-full bg-brand-surface border border-brand-border hover:bg-brand-surface-alt rounded-2xl p-4 text-left transition-colors shadow-sm flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-brand-green/10 flex items-center justify-center text-brand-green shrink-0"><Calendar size={18} /></div>
+                <div><p className="text-sm font-semibold text-brand-ink">Share with a professional</p><p className="text-[10px] text-brand-ink/60">They'll review this before your session</p></div>
+              </button>
+              <button onClick={onHome} className="w-full bg-brand-surface border border-brand-border hover:bg-brand-surface-alt rounded-2xl p-4 text-left transition-colors shadow-sm flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-brand-rust/10 flex items-center justify-center text-brand-rust shrink-0"><Heart size={18} /></div>
+                <div><p className="text-sm font-semibold text-brand-ink">Keep exploring</p><p className="text-[10px] text-brand-ink/60">Browse community stories and resources</p></div>
+              </button>
+              <button onClick={onBack} className="w-full bg-brand-surface border border-brand-border hover:bg-brand-surface-alt rounded-2xl p-4 text-left transition-colors shadow-sm flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-brand-bg flex items-center justify-center text-brand-ink/50 shrink-0"><Edit3 size={18} /></div>
+                <div><p className="text-sm font-semibold text-brand-ink">Continue sharing</p><p className="text-[10px] text-brand-ink/60">Add more to your conversation with Maan</p></div>
+              </button>
+            </div>
+          </>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function DashboardScreen({ consultations, onViewBrief }: { consultations: typeof CONSULTATIONS, onViewBrief: (id: string) => void }) {
   return (
     <div className="p-6 pb-24">
       <div className="flex justify-between items-end mb-8 mt-4">
@@ -1427,10 +1903,10 @@ function DashboardScreen({ onViewBrief }: { onViewBrief: (id: string) => void })
       </div>
 
       <div className="space-y-4">
-        {CONSULTATIONS.map((consult) => (
+        {consultations.map((consult) => (
           <div 
             key={consult.id} 
-            className="bg-brand-surface rounded-[1.5rem] p-5 border border-brand-border shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+            className="bg-brand-surface rounded-2xl p-5 border border-brand-border shadow-sm hover:shadow-md transition-shadow cursor-pointer"
             onClick={() => onViewBrief(consult.id)}
           >
             <div className="flex justify-between items-start mb-3">
@@ -1497,7 +1973,7 @@ function ScheduleScreen() {
       {/* Week View */}
       <div className="flex justify-between mb-8">
         {days.map((d, i) => (
-          <div key={i} className={`flex flex-col items-center p-3 rounded-2xl min-w-[3rem] ${d.active ? 'bg-brand-rust text-white shadow-md' : 'bg-brand-surface border border-brand-border text-brand-ink/60'}`}>
+          <div key={i} className={`flex flex-col items-center p-3 rounded-2xl min-w-[3rem] ${d.active ? 'bg-brand-rust text-[#FDF6F0] shadow-md' : 'bg-brand-surface border border-brand-border text-brand-ink/60'}`}>
             <span className="text-[10px] uppercase font-semibold tracking-wider mb-1">{d.day}</span>
             <span className={`font-serif text-xl ${d.active ? 'text-white' : 'text-brand-ink'}`}>{d.date}</span>
           </div>
@@ -1509,14 +1985,14 @@ function ScheduleScreen() {
         <h3 className="font-serif text-lg font-semibold text-brand-ink mb-4">Wednesday, Oct 14</h3>
         
         <div className="flex gap-4 items-start">
-          <div className="w-16 text-right text-xs font-medium text-brand-ink/40 pt-3">09:00 AM</div>
+          <div className="w-16 text-right text-xs font-medium text-brand-ink/50 pt-3">09:00 AM</div>
           <div className="flex-1 bg-brand-surface-alt border border-brand-border border-dashed rounded-xl p-4 text-center text-sm text-brand-ink/50">
             Available Slot
           </div>
         </div>
 
         <div className="flex gap-4 items-start">
-          <div className="w-16 text-right text-xs font-medium text-brand-ink/40 pt-3">10:00 AM</div>
+          <div className="w-16 text-right text-xs font-medium text-brand-ink/50 pt-3">10:00 AM</div>
           <div className="flex-1 bg-brand-green-light/50 border border-brand-green/30 rounded-xl p-4">
             <p className="font-semibold text-brand-ink text-sm">Sita, 34</p>
             <p className="text-xs text-brand-ink/60 mt-1">Family Guidance</p>
@@ -1524,14 +2000,14 @@ function ScheduleScreen() {
         </div>
 
         <div className="flex gap-4 items-start">
-          <div className="w-16 text-right text-xs font-medium text-brand-ink/40 pt-3">11:00 AM</div>
+          <div className="w-16 text-right text-xs font-medium text-brand-ink/50 pt-3">11:00 AM</div>
           <div className="flex-1 bg-brand-surface-alt border border-brand-border border-dashed rounded-xl p-4 text-center text-sm text-brand-ink/50">
             Available Slot
           </div>
         </div>
 
         <div className="flex gap-4 items-start">
-          <div className="w-16 text-right text-xs font-medium text-brand-ink/40 pt-3">11:30 AM</div>
+          <div className="w-16 text-right text-xs font-medium text-brand-ink/50 pt-3">11:30 AM</div>
           <div className="flex-1 bg-brand-rust-light/50 border border-brand-rust/30 rounded-xl p-4">
             <p className="font-semibold text-brand-ink text-sm">Ram, 28</p>
             <p className="text-xs text-brand-ink/60 mt-1">Individual Intake</p>
@@ -1560,7 +2036,7 @@ function ProfileScreen() {
       </div>
 
       {/* Cultural Competencies (The SAHARA Differentiator) */}
-      <div className="bg-brand-surface rounded-[1.5rem] p-5 border border-brand-border shadow-sm mb-6">
+      <div className="bg-brand-surface rounded-2xl p-5 border border-brand-border shadow-sm mb-6">
         <h3 className="text-xs font-semibold text-brand-ink/50 uppercase tracking-wider mb-4">Cultural & Clinical Focus</h3>
         <div className="flex flex-wrap gap-2">
           <span className="px-3 py-1.5 bg-brand-bg rounded-lg text-xs font-medium text-brand-ink border border-brand-border">🇳🇵 Fluent Nepali</span>
@@ -1579,13 +2055,13 @@ function ProfileScreen() {
       </div>
 
       {/* Client Impact (Simplified) */}
-      <div className="bg-brand-surface rounded-[1.5rem] p-5 border border-brand-border shadow-sm">
+      <div className="bg-brand-surface rounded-2xl p-5 border border-brand-border shadow-sm">
         <div className="flex items-center justify-between">
           <h3 className="text-xs font-semibold text-brand-ink/50 uppercase tracking-wider">Client Impact</h3>
           <span className="flex items-center gap-1.5 text-sm font-medium text-brand-ink">
             <span className="text-brand-rust text-lg leading-none">★</span> 
             4.9 
-            <span className="text-brand-ink/40 font-normal ml-1">(124 sessions)</span>
+            <span className="text-brand-ink/50 font-normal ml-1">(124 sessions)</span>
           </span>
         </div>
       </div>
@@ -1603,13 +2079,14 @@ function ClientsScreen({ onViewClient }: { onViewClient: (id: string) => void })
 
       {/* Search Bar */}
       <div className="bg-brand-surface rounded-2xl p-1 border border-brand-border shadow-sm mb-6 flex items-center px-3">
-        <div className="text-brand-ink/40 mr-2">
+        <div className="text-brand-ink/50 mr-2">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
         </div>
-        <input 
-          type="text" 
-          placeholder="Search clients..." 
-          className="w-full bg-transparent py-3 text-sm text-brand-ink placeholder:text-brand-ink/40 focus:outline-none"
+        <input
+          type="text"
+          placeholder="Search clients..."
+          aria-label="Search clients"
+          className="w-full bg-transparent py-3 text-sm text-brand-ink placeholder:text-brand-ink/50 focus:outline-none"
         />
       </div>
 
@@ -1658,20 +2135,20 @@ function ClientDetailScreen({ client, onBack }: { client: any, onBack: () => voi
       <div className="p-6 pb-24 overflow-y-auto">
         
         {/* Client Meta */}
-        <div className="bg-brand-surface rounded-[1.5rem] p-5 border border-brand-border shadow-sm mb-6">
+        <div className="bg-brand-surface rounded-2xl p-5 border border-brand-border shadow-sm mb-6">
           <div className="flex justify-between items-start mb-4">
             <div>
-              <p className="text-[10px] uppercase tracking-wider font-semibold text-brand-ink/40 mb-1">Consultation Type</p>
+              <p className="text-[10px] uppercase tracking-wider font-semibold text-brand-ink/50 mb-1">Consultation Type</p>
               <p className="text-sm font-medium text-brand-ink">{client.type}</p>
             </div>
             <div className="text-right">
-              <p className="text-[10px] uppercase tracking-wider font-semibold text-brand-ink/40 mb-1">Total Sessions</p>
+              <p className="text-[10px] uppercase tracking-wider font-semibold text-brand-ink/50 mb-1">Total Sessions</p>
               <p className="text-sm font-medium text-brand-ink">{client.totalSessions}</p>
             </div>
           </div>
           {client.subject !== 'Self' && (
             <div className="pt-4 border-t border-brand-border/60">
-              <p className="text-[10px] uppercase tracking-wider font-semibold text-brand-ink/40 mb-1">Subject of Concern</p>
+              <p className="text-[10px] uppercase tracking-wider font-semibold text-brand-ink/50 mb-1">Subject of Concern</p>
               <p className="text-sm font-medium text-brand-ink">{client.subject}</p>
             </div>
           )}
@@ -1695,8 +2172,8 @@ function ClientDetailScreen({ client, onBack }: { client: any, onBack: () => voi
                 <div key={idx} className="bg-brand-surface rounded-2xl p-5 border border-brand-border shadow-sm relative overflow-hidden">
                   <div className="absolute left-0 top-0 bottom-0 w-1 bg-brand-rust/30"></div>
                   <div className="flex justify-between items-start mb-2">
-                    <span className="text-[10px] font-semibold text-brand-ink/40 uppercase tracking-wider">{post.community}</span>
-                    <span className="text-[10px] text-brand-ink/40">{post.date}</span>
+                    <span className="text-[10px] font-semibold text-brand-ink/50 uppercase tracking-wider">{post.community}</span>
+                    <span className="text-[10px] text-brand-ink/50">{post.date}</span>
                   </div>
                   <p className="text-sm text-brand-ink/80 leading-relaxed italic">
                     "{post.content}"
@@ -1748,7 +2225,7 @@ function PatientBriefScreen({ consult, onBack }: { consult: any, onBack: () => v
         {/* Context Tags */}
         <div className="mb-6 flex flex-col gap-3">
           <div>
-            <p className="text-[11px] uppercase tracking-wider font-semibold text-brand-ink/40 mb-1.5">Consultation Type</p>
+            <p className="text-[11px] uppercase tracking-wider font-semibold text-brand-ink/50 mb-1.5">Consultation Type</p>
             <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium ${
               consult.isFamily 
                 ? 'bg-brand-green-light text-[#3A4A36]' 
@@ -1768,7 +2245,7 @@ function PatientBriefScreen({ consult, onBack }: { consult: any, onBack: () => v
         </div>
 
         {/* AI Summary Card */}
-        <div className="bg-brand-bg rounded-[1.5rem] p-6 border border-brand-border mb-6">
+        <div className="bg-brand-bg rounded-2xl p-6 border border-brand-border mb-6">
           <div className="flex items-center gap-2 mb-4">
             <div className="w-8 h-8 rounded-full bg-brand-rust/10 text-brand-rust flex items-center justify-center">
               <FileText size={16} />
@@ -1789,7 +2266,7 @@ function PatientBriefScreen({ consult, onBack }: { consult: any, onBack: () => v
         </div>
 
         {/* Raw Transcript Snippet */}
-        <div className="bg-brand-surface rounded-[1.5rem] p-6 border border-brand-border mb-8 shadow-sm">
+        <div className="bg-brand-surface rounded-2xl p-6 border border-brand-border mb-8 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
             <div className="w-8 h-8 rounded-full bg-brand-surface-alt text-brand-ink/60 flex items-center justify-center">
               <MessageCircle size={16} />
@@ -1805,29 +2282,29 @@ function PatientBriefScreen({ consult, onBack }: { consult: any, onBack: () => v
         </div>
 
         {/* AI Feedback Loop */}
-        <div className="bg-[#3A2E2B] rounded-[1.5rem] p-6 text-white shadow-lg">
-          <h4 className="font-serif text-lg font-semibold mb-2">Help SAHARA Learn</h4>
-          <p className="text-white/70 text-sm mb-6 leading-relaxed">
+        <div className="bg-brand-surface border-2 border-brand-rust/30 rounded-2xl p-5">
+          <h4 className="font-serif text-lg font-semibold text-brand-ink mb-2">Help Sahara Learn</h4>
+          <p className="text-brand-ink/60 text-sm mb-6 leading-relaxed">
             Does this AI summary accurately reflect the clinical reality of your consultation?
           </p>
-          
+
           {feedbackGiven ? (
-            <div className="bg-white/10 rounded-xl p-4 text-center border border-white/10">
-              <p className="text-sm font-medium text-brand-green-light flex items-center justify-center gap-2">
+            <div className="bg-brand-bg rounded-xl p-4 text-center border border-brand-border">
+              <p className="text-sm font-medium text-brand-green flex items-center justify-center gap-2">
                 <ShieldCheck size={16} /> Feedback recorded. Thank you.
               </p>
             </div>
           ) : (
             <div className="flex gap-3">
-              <button 
+              <button
                 onClick={() => setFeedbackGiven('up')}
-                className="flex-1 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl py-3 flex items-center justify-center gap-2 transition-colors text-sm font-medium"
+                className="flex-1 bg-brand-bg hover:bg-brand-surface-alt border border-brand-border rounded-xl py-3 flex items-center justify-center gap-2 transition-colors text-sm font-medium text-brand-ink"
               >
                 <ThumbsUp size={16} /> Accurate
               </button>
-              <button 
+              <button
                 onClick={() => setFeedbackGiven('down')}
-                className="flex-1 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl py-3 flex items-center justify-center gap-2 transition-colors text-sm font-medium"
+                className="flex-1 bg-brand-bg hover:bg-brand-surface-alt border border-brand-border rounded-xl py-3 flex items-center justify-center gap-2 transition-colors text-sm font-medium text-brand-ink"
               >
                 <ThumbsDown size={16} /> Missed Nuance
               </button>
