@@ -98,6 +98,7 @@ export default function App() {
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [chatContext, setChatContext] = useState<string>('self');
   const [journalEntries, setJournalEntries] = useState(MOCK_JOURNAL_ENTRIES);
+  const [journalUnlocked, setJournalUnlocked] = useState(false);
 
   const handleSaveJournal = (summary: string, mood: string, techniques: string[]) => {
     const newEntry = {
@@ -108,6 +109,7 @@ export default function App() {
       techniques
     };
     setJournalEntries(prev => [newEntry, ...prev]);
+    setJournalUnlocked(true); // Auto-unlock after saving from Maan
     navigateTab('user-journal');
   };
 
@@ -160,8 +162,9 @@ export default function App() {
           {currentView === 'demo-select' && <DemoSelectScreen onSelect={(role) => navigateTab(role === 'pro' ? 'login' : 'user-home')} />}
           {currentView === 'user-home' && <UserHomeScreen onStartChat={(ctx) => { setChatContext(ctx); setCurrentView('ai-chat'); }} onExplore={() => setCurrentView('community-feed')} />}
           {currentView === 'ai-chat' && <AiChatScreen context={chatContext} onBack={goBack} onExplore={() => setCurrentView('community-feed')} onConsult={() => setCurrentView('user-consultation')} onSaveJournal={handleSaveJournal} />}
-          {currentView === 'community-feed' && <CommunityFeedScreen onBack={goBack} />}
-          {currentView === 'user-journal' && <JournalScreen entries={journalEntries} onBack={goBack} />}
+          {currentView === 'community-feed' && <CommunityFeedScreen onBack={goBack} onStartShare={() => { setChatContext('share'); setCurrentView('ai-chat'); }} />}
+          {currentView === 'user-journal' && !journalUnlocked && <PinGateScreen onUnlock={() => setJournalUnlocked(true)} onSkip={() => setJournalUnlocked(true)} onBack={goBack} />}
+          {currentView === 'user-journal' && journalUnlocked && <JournalScreen entries={journalEntries} onBack={goBack} />}
           {currentView === 'login' && <LoginScreen onLogin={handleLogin} onBack={goBack} />}
           {currentView === 'queue' && <DashboardScreen onViewBrief={handleViewBrief} />}
           {currentView === 'schedule' && <ScheduleScreen />}
@@ -180,18 +183,7 @@ export default function App() {
             />
           )}
           {currentView === 'user-consultation' && (
-            <div className="p-8 flex flex-col h-full items-center justify-center text-center">
-              <button 
-                onClick={goBack}
-                className="absolute top-6 left-6 w-10 h-10 rounded-full bg-brand-surface flex items-center justify-center text-brand-ink border border-brand-border hover:bg-brand-surface-alt transition-colors"
-              >
-                <ChevronLeft size={20} />
-              </button>
-              <Calendar size={48} className="text-brand-rust mb-4" />
-              <h2 className="font-serif text-2xl font-semibold text-brand-ink mb-2">Consultation Booking</h2>
-              <p className="text-brand-ink/60 text-sm">This feature is coming soon.</p>
-              <button onClick={() => navigateTab('user-home')} className="mt-8 text-brand-rust font-medium">Back to Home</button>
-            </div>
+            <ConsultationBookingScreen chatContext={chatContext} onBack={goBack} onHome={() => navigateTab('user-home')} onExplore={() => navigateTab('community-feed')} />
           )}
           {currentView === 'user-help' && <HelpScreen onBack={goBack} onHome={() => navigateTab('user-home')} />}
         </div>
@@ -557,6 +549,222 @@ function LoginScreen({ onLogin, onBack }: { onLogin: () => void, onBack: () => v
   );
 }
 
+function PinGateScreen({ onUnlock, onSkip, onBack }: { onUnlock: () => void, onSkip: () => void, onBack: () => void }) {
+  const [pinInput, setPinInput] = useState('');
+  const [pinError, setPinError] = useState(false);
+  const DEMO_PIN = '1234';
+
+  const handleKey = (digit: string) => {
+    if (pinInput.length >= 4) return;
+    const next = pinInput + digit;
+    setPinInput(next);
+    if (next.length === 4) {
+      if (next === DEMO_PIN) {
+        onUnlock();
+      } else {
+        setPinError(true);
+        setTimeout(() => { setPinError(false); setPinInput(''); }, 700);
+      }
+    }
+  };
+
+  const handleBackspace = () => {
+    setPinInput(prev => prev.slice(0, -1));
+    setPinError(false);
+  };
+
+  const keys = ['1','2','3','4','5','6','7','8','9','','0','⌫'];
+
+  return (
+    <div className="flex flex-col h-full bg-brand-bg items-center">
+      <div className="w-full px-6 py-6 flex items-center gap-4 border-b border-brand-border">
+        <button onClick={onBack} className="w-10 h-10 rounded-full bg-brand-surface flex items-center justify-center text-brand-ink border border-brand-border hover:bg-brand-surface-alt transition-colors">
+          <ChevronLeft size={20} />
+        </button>
+        <h1 className="font-serif text-2xl font-semibold text-brand-ink">Private Journal</h1>
+      </div>
+
+      <div className="flex-1 flex flex-col items-center justify-center px-8 w-full">
+        <div className="w-16 h-16 rounded-full bg-brand-surface border border-brand-border flex items-center justify-center mb-6 shadow-sm">
+          <Lock size={28} className="text-brand-rust" />
+        </div>
+        <p className="font-serif text-xl font-semibold text-brand-ink mb-2 text-center">Your reflections are protected.</p>
+        <p className="text-sm text-brand-ink/60 text-center mb-8">Enter your PIN to continue.</p>
+
+        {/* PIN dots */}
+        <div className={`flex gap-4 mb-8 ${pinError ? 'shake' : ''}`}>
+          {[0,1,2,3].map(i => (
+            <div key={i} className={`w-4 h-4 rounded-full border-2 transition-colors ${i < pinInput.length ? 'bg-brand-rust border-brand-rust' : 'border-brand-border bg-transparent'}`} />
+          ))}
+        </div>
+        {pinError && <p className="text-xs text-red-500 mb-4 -mt-4">Incorrect PIN. Try again.</p>}
+
+        {/* Keypad */}
+        <div className="grid grid-cols-3 gap-3 w-full max-w-[240px]">
+          {keys.map((key, i) => (
+            key === '' ? <div key={i} /> :
+            key === '⌫' ? (
+              <button key={i} onClick={handleBackspace} className="w-full aspect-square rounded-full bg-brand-surface-alt border border-brand-border text-brand-ink font-serif text-xl flex items-center justify-center hover:bg-brand-border transition-colors">
+                ⌫
+              </button>
+            ) : (
+              <button key={i} onClick={() => handleKey(key)} className="w-full aspect-square rounded-full bg-brand-surface border border-brand-border text-brand-ink font-serif text-xl flex items-center justify-center hover:bg-brand-surface-alt transition-colors shadow-sm">
+                {key}
+              </button>
+            )
+          ))}
+        </div>
+
+        <button onClick={onSkip} className="mt-6 text-xs text-brand-ink/40 hover:text-brand-ink/60 transition-colors">
+          Set up later — skip for now
+        </button>
+      </div>
+
+      <div className="px-8 pb-8 w-full">
+        <div className="bg-brand-surface rounded-2xl p-4 border border-brand-border space-y-2">
+          {['Your journal entries stay on your device', 'No one — not even Sahara — can read them without your PIN', 'In homes where phones are shared, your privacy matters'].map((t, i) => (
+            <p key={i} className="text-xs text-brand-ink/60 flex items-start gap-2"><span className="text-brand-green mt-0.5">✓</span>{t}</p>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ConsultationBookingScreen({ chatContext, onBack, onHome, onExplore }: { chatContext: string, onBack: () => void, onHome: () => void, onExplore: () => void }) {
+  const [sessionType, setSessionType] = useState<'family' | 'individual'>(chatContext === 'family' ? 'family' : 'individual');
+  const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+  const [confirmed, setConfirmed] = useState(false);
+
+  const slots = ['Tomorrow, 10:00 AM', 'Tomorrow, 2:00 PM', 'March 30, 11:00 AM', 'March 30, 4:00 PM'];
+
+  if (confirmed && selectedSlot) {
+    return (
+      <div className="flex flex-col h-full bg-brand-bg items-center justify-center px-8 text-center">
+        <div className="w-16 h-16 rounded-full bg-brand-green/10 flex items-center justify-center mb-6">
+          <ShieldCheck size={32} className="text-brand-green" />
+        </div>
+        <h2 className="font-serif text-2xl font-semibold text-brand-ink mb-2">Consultation Booked</h2>
+        <p className="text-brand-ink/60 text-sm mb-6">with Dr. Anjali Sharma</p>
+        <div className="bg-brand-surface rounded-2xl p-5 border border-brand-border w-full mb-6 text-left space-y-3">
+          <div>
+            <p className="text-[10px] font-semibold text-brand-ink/40 uppercase tracking-wider mb-1">Session Time</p>
+            <p className="text-sm font-medium text-brand-ink">{selectedSlot}</p>
+          </div>
+          <div>
+            <p className="text-[10px] font-semibold text-brand-ink/40 uppercase tracking-wider mb-1">Session Type</p>
+            <p className="text-sm font-medium text-brand-ink">{sessionType === 'family' ? 'Family Guidance' : 'Individual Session'}</p>
+          </div>
+        </div>
+        <p className="text-xs text-brand-ink/50 mb-8">You'll receive preparation guidance before your session.</p>
+        <div className="flex gap-3 w-full">
+          <button onClick={onHome} className="flex-1 py-3 rounded-2xl border border-brand-border text-brand-ink text-sm font-medium hover:bg-brand-surface-alt transition-colors">Back to Home</button>
+          <button onClick={onExplore} className="flex-1 py-3 rounded-2xl bg-brand-rust text-white text-sm font-medium hover:bg-brand-rust/90 transition-colors">Continue Exploring</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col h-full bg-brand-bg">
+      <div className="px-6 py-6 flex items-center gap-4 border-b border-brand-border">
+        <button onClick={onBack} className="w-10 h-10 rounded-full bg-brand-surface flex items-center justify-center text-brand-ink border border-brand-border hover:bg-brand-surface-alt transition-colors shrink-0">
+          <ChevronLeft size={20} />
+        </button>
+        <div>
+          <h1 className="font-serif text-2xl font-semibold text-brand-ink">Connect with a Professional</h1>
+          <p className="text-xs text-brand-ink/60 mt-0.5">Licensed professionals who understand your culture and context.</p>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-6 space-y-5 pb-6">
+        {/* Professional Card */}
+        <div className="bg-brand-surface rounded-[1.5rem] p-5 border border-brand-border shadow-sm">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="w-14 h-14 rounded-full bg-brand-rust/10 flex items-center justify-center font-serif text-xl font-semibold text-brand-rust shrink-0">AS</div>
+            <div>
+              <h3 className="font-serif text-lg font-semibold text-brand-ink">Dr. Anjali Sharma</h3>
+              <p className="text-xs text-brand-ink/60">Clinical Psychologist · Kathmandu</p>
+              <p className="text-xs text-brand-green font-medium mt-0.5">★ 4.9 · 124 sessions</p>
+            </div>
+          </div>
+          <p className="text-sm text-brand-ink/70 leading-relaxed mb-4">Specializing in bridging the gap between traditional family expectations and modern mental health needs.</p>
+          <div className="flex flex-wrap gap-2">
+            {['Fluent Nepali', 'Family Systems', 'Intergenerational Trauma'].map(tag => (
+              <span key={tag} className="text-[10px] font-medium bg-brand-bg border border-brand-border px-2 py-1 rounded-full text-brand-ink/70">{tag}</span>
+            ))}
+          </div>
+        </div>
+
+        {/* Step 1: Session Type */}
+        <div>
+          <p className="text-xs font-semibold text-brand-ink/50 uppercase tracking-wider mb-3">1. Choose Session Type</p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setSessionType('family')}
+              className={`flex-1 py-3 px-4 rounded-2xl border text-sm font-medium transition-colors ${sessionType === 'family' ? 'bg-brand-green-light border-brand-green text-[#3A4A36]' : 'bg-brand-surface border-brand-border text-brand-ink/70 hover:bg-brand-surface-alt'}`}
+            >
+              <Users size={14} className="inline mr-1.5" />Family Guidance
+            </button>
+            <button
+              onClick={() => setSessionType('individual')}
+              className={`flex-1 py-3 px-4 rounded-2xl border text-sm font-medium transition-colors ${sessionType === 'individual' ? 'bg-brand-rust-light border-brand-rust text-[#5A3A30]' : 'bg-brand-surface border-brand-border text-brand-ink/70 hover:bg-brand-surface-alt'}`}
+            >
+              <User size={14} className="inline mr-1.5" />Individual
+            </button>
+          </div>
+        </div>
+
+        {/* Step 2: Time Slot */}
+        <div>
+          <p className="text-xs font-semibold text-brand-ink/50 uppercase tracking-wider mb-3">2. Choose a Time</p>
+          <div className="space-y-2">
+            {slots.map(slot => (
+              <button
+                key={slot}
+                onClick={() => setSelectedSlot(slot)}
+                className={`w-full py-3 px-4 rounded-2xl border text-sm font-medium text-left transition-colors ${selectedSlot === slot ? 'bg-brand-rust/10 border-brand-rust text-brand-rust' : 'bg-brand-surface border-brand-border text-brand-ink hover:bg-brand-surface-alt'}`}
+              >
+                {slot}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* What to Expect */}
+        <div className="bg-brand-bg rounded-2xl p-4 border border-brand-border space-y-2">
+          <p className="text-xs font-semibold text-brand-ink/50 uppercase tracking-wider mb-2">What to Expect</p>
+          {[
+            'Your Maan conversation summary will be shared with the professional (with your consent)',
+            'The professional reviews your context before the session',
+            'Sessions are 30–45 minutes via video call',
+            'Everything discussed is confidential'
+          ].map((item, i) => (
+            <p key={i} className="text-xs text-brand-ink/70 flex items-start gap-2"><span className="text-brand-green mt-0.5 shrink-0">✓</span>{item}</p>
+          ))}
+        </div>
+
+        {/* Confirm Button */}
+        <div>
+          <button
+            onClick={() => { if (selectedSlot) setConfirmed(true); }}
+            disabled={!selectedSlot}
+            className="w-full py-4 rounded-2xl bg-brand-rust text-white font-semibold text-sm hover:bg-brand-rust/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            Book Consultation
+          </button>
+          <p className="text-[10px] text-brand-ink/40 text-center mt-2 leading-relaxed">
+            Consultations are guidance sessions, not diagnostic appointments. ₹500–1000 / $5–11 per session.
+          </p>
+          {!chatContext.includes('family') && !chatContext.includes('self') && (
+            <p className="text-xs text-brand-ink/50 text-center mt-2">Consider talking to Maan first to help organize your thoughts.</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function JournalScreen({ entries, onBack }: { entries: any[], onBack: () => void }) {
   return (
     <div className="flex flex-col h-full bg-brand-bg relative">
@@ -610,52 +818,122 @@ function JournalScreen({ entries, onBack }: { entries: any[], onBack: () => void
   );
 }
 
-function CommunityFeedScreen({ onBack }: { onBack: () => void }) {
+function CommunityFeedScreen({ onBack, onStartShare }: { onBack: () => void, onStartShare: () => void }) {
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedStory, setSelectedStory] = useState<any | null>(null);
 
   const handleInteract = () => {
     setShowAuthPrompt(true);
     setTimeout(() => setShowAuthPrompt(false), 3000);
   };
 
-  const FEED_POSTS = [
+  const FEED_POSTS: any[] = [
     {
       id: 1,
+      type: 'story',
       author: "Anonymous Sister",
       time: "2 hours ago",
       tag: "Social Withdrawal",
-      aiSummary: "Concerned about brother's 3-week social withdrawal and parents' misinterpretation as laziness. Seeking advice on bridging the communication gap.",
+      aiSummary: "Social withdrawal, irregular sleep, work absence — 3 weeks. Family perceives as laziness. Common pattern in 124 families on Sahara.",
       content: "My brother hasn't left his room in weeks. My parents keep telling him to 'just go outside and get fresh air' and think he is just being lazy. I know it's something deeper but I don't know how to bridge the gap between them.",
       meTooCount: 124,
       proResponses: 2
     },
     {
+      id: 'expert-1',
+      type: 'expert',
+      name: "Dr. Asha S.",
+      credential: "Psychiatrist, Kathmandu",
+      verified: true,
+      content: "When a family member says 'he's just lazy,' that's often the first sign someone needs gentle support. Starting with a conversation — not a confrontation — makes a real difference.",
+      tag: "Social Withdrawal"
+    },
+    {
       id: 2,
+      type: 'story',
       author: "Anonymous Son",
       time: "5 hours ago",
       tag: "Academic Pressure",
-      aiSummary: "Experiencing severe pressure to succeed. Fears family will perceive need for therapy as a failure. Looking for ways to initiate conversation.",
+      aiSummary: "Severe pressure to succeed. Fears family will perceive therapy as failure. Seeking strategies to initiate conversation.",
       content: "The pressure to succeed and provide is crushing me. If I tell my family I need therapy, they will think they failed as parents or that I am broken. How do you start this conversation?",
       meTooCount: 89,
       proResponses: 1
     },
     {
       id: 3,
+      type: 'story',
       author: "Anonymous Mother",
       time: "1 day ago",
       tag: "Stigma & Resistance",
-      aiSummary: "Husband is resistant to seeking counseling for daughter due to stigma around 'airing dirty laundry'. Mother feels stuck.",
+      aiSummary: "Husband resistant to counseling. Cites 'airing dirty laundry' stigma. Mother feels isolated and stuck.",
       content: "I suggested to my husband that we see a counselor for our daughter. He got very angry and said 'we don't air our dirty laundry to strangers'. I feel so stuck.",
       meTooCount: 210,
       proResponses: 4
+    },
+    {
+      id: 4,
+      type: 'story',
+      author: "Worried Daughter",
+      time: "1 day ago",
+      tag: "Social Isolation",
+      aiSummary: "2-month social isolation. Verbal denial vs. visible distress. Seeking peer strategies for family conversation.",
+      content: "My mother hasn't left the house in two months. She says she's fine but I can see it in her eyes. How did others approach this conversation?",
+      meTooCount: 67,
+      proResponses: 1
     }
   ];
+
+  // Story Detail Overlay
+  if (selectedStory) {
+    return (
+      <div className="flex flex-col h-full bg-brand-bg">
+        <div className="px-6 py-6 flex items-center gap-4 border-b border-brand-border sticky top-0 bg-brand-bg/90 backdrop-blur-md z-10">
+          <button onClick={() => setSelectedStory(null)} className="w-10 h-10 rounded-full bg-brand-surface flex items-center justify-center text-brand-ink border border-brand-border hover:bg-brand-surface-alt transition-colors">
+            <ChevronLeft size={20} />
+          </button>
+          <span className="text-[10px] font-medium uppercase tracking-wider text-brand-ink/50 bg-brand-bg border border-brand-border px-2 py-1 rounded-md">{selectedStory.tag}</span>
+        </div>
+        <div className="flex-1 overflow-y-auto p-6 space-y-5 pb-8">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-8 rounded-full bg-brand-rust/10 flex items-center justify-center"><Users size={14} className="text-brand-rust" /></div>
+            <div>
+              <p className="text-xs font-semibold text-brand-ink">{selectedStory.author}</p>
+              <p className="text-[10px] text-brand-ink/40">{selectedStory.time}</p>
+            </div>
+          </div>
+          <p className="text-base text-brand-ink/80 leading-relaxed italic">"{selectedStory.content}"</p>
+          <div className="bg-brand-bg rounded-xl p-4 border border-brand-border/50">
+            <div className="flex items-center gap-1.5 mb-2 text-brand-rust">
+              <Sparkles size={14} />
+              <span className="text-[10px] font-bold uppercase tracking-wider">AI-Organized Summary</span>
+            </div>
+            <p className="text-sm text-brand-ink/90 font-medium leading-relaxed">{selectedStory.aiSummary}</p>
+          </div>
+          <div className="flex items-center justify-between pt-4 border-t border-brand-border/60">
+            <button onClick={handleInteract} className="flex items-center gap-1.5 text-brand-ink/50 hover:text-brand-rust transition-colors">
+              <Heart size={16} /><span className="text-xs font-medium">{selectedStory.meTooCount} Ma Pani</span>
+            </button>
+            <button onClick={handleInteract} className="flex items-center gap-1.5 text-brand-green bg-brand-green-light/30 px-3 py-1.5 rounded-full">
+              <ShieldCheck size={14} /><span className="text-xs font-medium">{selectedStory.proResponses} Pro Responses</span>
+            </button>
+          </div>
+          <div className="bg-brand-surface rounded-2xl p-4 border border-brand-border">
+            <p className="text-xs font-semibold text-brand-ink/50 uppercase tracking-wider mb-2">Does this resonate?</p>
+            <button onClick={onStartShare} className="w-full py-3 rounded-xl bg-brand-rust text-white text-sm font-medium hover:bg-brand-rust/90 transition-colors">
+              Share your experience with Maan
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full bg-brand-bg relative">
       {/* Auth Prompt Toast */}
       {showAuthPrompt && (
-        <div className="absolute top-24 left-4 right-4 bg-brand-ink text-white p-4 rounded-2xl shadow-xl z-50 flex items-start gap-3 animate-in fade-in slide-in-from-top-4">
+        <div className="absolute top-24 left-4 right-4 bg-brand-ink text-white p-4 rounded-2xl shadow-xl z-50 flex items-start gap-3">
           <Lock size={20} className="text-brand-rust shrink-0 mt-0.5" />
           <div>
             <p className="font-semibold text-sm mb-1">Create an account to interact</p>
@@ -667,94 +945,116 @@ function CommunityFeedScreen({ onBack }: { onBack: () => void }) {
       {/* Header */}
       <div className="bg-brand-bg/90 backdrop-blur-md z-10 px-6 py-6 border-b border-brand-border sticky top-0">
         <div className="flex items-center justify-between mb-4">
-          <button 
-            onClick={onBack}
-            className="w-10 h-10 rounded-full bg-brand-surface flex items-center justify-center text-brand-ink border border-brand-border hover:bg-brand-surface-alt transition-colors"
-          >
+          <button onClick={onBack} className="w-10 h-10 rounded-full bg-brand-surface flex items-center justify-center text-brand-ink border border-brand-border hover:bg-brand-surface-alt transition-colors">
             <ChevronLeft size={20} />
           </button>
-          <div className="w-10 h-10 bg-brand-rust text-white rounded-full flex items-center justify-center font-serif text-xl shadow-sm">
-            S
-          </div>
+          <div className="w-10 h-10 bg-brand-rust text-white rounded-full flex items-center justify-center font-serif text-xl shadow-sm">S</div>
         </div>
         <h1 className="font-serif text-3xl font-semibold text-brand-ink mb-1">Chautari / Ma Pani</h1>
         <p className="text-brand-ink/60 text-sm">"Me Too" — You are not alone in this.</p>
+        {/* Search Bar */}
+        <div className="mt-4 flex items-center gap-2 bg-brand-surface border border-brand-border rounded-2xl px-4 py-2.5">
+          <Eye size={16} className="text-brand-ink/30 shrink-0" />
+          <input
+            type="text"
+            placeholder="Search stories..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            className="flex-1 bg-transparent text-sm text-brand-ink placeholder:text-brand-ink/40 focus:outline-none"
+          />
+        </div>
       </div>
 
       {/* Filters */}
-      <div className="px-6 py-4 flex gap-2 overflow-x-auto scrollbar-hide border-b border-brand-border/50">
-        <button className="px-4 py-2 rounded-full bg-brand-ink text-white text-xs font-medium whitespace-nowrap shadow-sm">
-          All Stories
-        </button>
-        <button className="px-4 py-2 rounded-full bg-brand-surface border border-brand-border text-brand-ink text-xs font-medium whitespace-nowrap hover:bg-brand-surface-alt transition-colors">
-          Family Dynamics
-        </button>
-        <button className="px-4 py-2 rounded-full bg-brand-surface border border-brand-border text-brand-ink text-xs font-medium whitespace-nowrap hover:bg-brand-surface-alt transition-colors">
-          Academic Pressure
-        </button>
+      <div className="px-6 py-3 flex gap-2 overflow-x-auto scrollbar-hide border-b border-brand-border/50">
+        <button className="px-4 py-2 rounded-full bg-brand-ink text-white text-xs font-medium whitespace-nowrap shadow-sm">All Stories</button>
+        <button className="px-4 py-2 rounded-full bg-brand-surface border border-brand-border text-brand-ink text-xs font-medium whitespace-nowrap hover:bg-brand-surface-alt transition-colors">Family Dynamics</button>
+        <button className="px-4 py-2 rounded-full bg-brand-surface border border-brand-border text-brand-ink text-xs font-medium whitespace-nowrap hover:bg-brand-surface-alt transition-colors">Academic Pressure</button>
+        <button className="px-4 py-2 rounded-full bg-brand-surface border border-brand-border text-brand-ink text-xs font-medium whitespace-nowrap hover:bg-brand-surface-alt transition-colors">Social Isolation</button>
       </div>
 
       {/* Feed */}
       <div className="flex-1 overflow-y-auto p-6 space-y-4 pb-20">
-        {FEED_POSTS.map((post) => (
-          <div key={post.id} className="bg-brand-surface rounded-[1.5rem] p-5 border border-brand-border shadow-sm">
-            <div className="flex justify-between items-start mb-4">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-brand-rust/10 flex items-center justify-center">
-                  <Users size={14} className="text-brand-rust" />
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-brand-ink">{post.author}</p>
-                  <p className="text-[10px] text-brand-ink/40">{post.time}</p>
-                </div>
-              </div>
-              <span className="text-[10px] font-medium uppercase tracking-wider text-brand-ink/50 bg-brand-bg px-2 py-1 rounded-md border border-brand-border">
-                {post.tag}
-              </span>
-            </div>
-            
-            {/* AI Summary Block */}
-            <div className="bg-brand-bg rounded-xl p-4 mb-4 border border-brand-border/50 relative">
-              <div className="flex items-center gap-1.5 mb-2 text-brand-rust">
-                <Sparkles size={14} />
-                <span className="text-[10px] font-bold uppercase tracking-wider">AI Summary</span>
-              </div>
-              <p className="text-sm text-brand-ink/90 font-medium leading-relaxed">
-                {post.aiSummary}
-              </p>
-            </div>
-
-            {/* Full Story Snippet */}
-            <div className="px-1 mb-4">
-              <p className="text-sm text-brand-ink/60 leading-relaxed italic line-clamp-2">
-                "{post.content}"
-              </p>
-              <button className="text-xs font-medium text-brand-rust mt-1 hover:underline">Read full story</button>
-            </div>
-
-            <div className="flex items-center justify-between pt-4 border-t border-brand-border/60">
-              <button 
-                onClick={handleInteract}
-                className="flex items-center gap-1.5 text-brand-ink/50 hover:text-brand-rust transition-colors"
-              >
-                <Heart size={16} />
-                <span className="text-xs font-medium">{post.meTooCount} Ma Pani</span>
-              </button>
-              <button 
-                onClick={handleInteract}
-                className="flex items-center gap-1.5 text-brand-green hover:text-brand-green/80 transition-colors bg-brand-green-light/30 px-3 py-1.5 rounded-full"
-              >
-                <ShieldCheck size={14} />
-                <span className="text-xs font-medium">{post.proResponses} Pro Responses</span>
-              </button>
-            </div>
+        {/* Share CTA */}
+        <div
+          onClick={onStartShare}
+          className="bg-brand-surface border border-brand-border rounded-2xl p-4 flex items-center gap-3 cursor-pointer hover:bg-brand-surface-alt transition-colors shadow-sm"
+        >
+          <div className="w-10 h-10 rounded-full bg-brand-rust/10 flex items-center justify-center text-brand-rust shrink-0">
+            <Edit3 size={18} />
           </div>
-        ))}
+          <span className="text-sm text-brand-ink/60 flex-1">What's on your mind?</span>
+          <span className="text-xs font-medium text-brand-rust">Share →</span>
+        </div>
+
+        {FEED_POSTS.map((post) => {
+          if (post.type === 'expert') {
+            return (
+              <div key={post.id} className="bg-brand-surface rounded-[1.5rem] p-5 border border-brand-border shadow-sm border-l-4 border-l-brand-green">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-full bg-brand-green/10 flex items-center justify-center font-serif text-brand-green text-sm font-semibold shrink-0">
+                    {post.name.split(' ').map((n: string) => n[0]).join('')}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-brand-ink">{post.name} <span className="text-brand-green text-xs">✓ Verified</span></p>
+                    <p className="text-[10px] text-brand-ink/50">{post.credential}</p>
+                  </div>
+                </div>
+                <p className="text-sm text-brand-ink/80 leading-relaxed">{post.content}</p>
+              </div>
+            );
+          }
+
+          return (
+            <div key={post.id} className="bg-brand-surface rounded-[1.5rem] p-5 border border-brand-border shadow-sm">
+              <div className="flex justify-between items-start mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-brand-rust/10 flex items-center justify-center">
+                    <Users size={14} className="text-brand-rust" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-brand-ink">{post.author}</p>
+                    <p className="text-[10px] text-brand-ink/40">{post.time}</p>
+                  </div>
+                </div>
+                <span className="text-[10px] font-medium uppercase tracking-wider text-brand-ink/50 bg-brand-bg px-2 py-1 rounded-md border border-brand-border">
+                  {post.tag}
+                </span>
+              </div>
+
+              {/* Story text first (G8) */}
+              <div className="px-1 mb-4">
+                <p className="text-sm text-brand-ink/70 leading-relaxed italic line-clamp-2">"{post.content}"</p>
+                <button onClick={() => setSelectedStory(post)} className="text-xs font-medium text-brand-rust mt-1 hover:underline">Read full story</button>
+              </div>
+
+              {/* AI Summary below story (G8) */}
+              <div className="bg-brand-bg rounded-xl p-4 mb-4 border border-brand-border/50">
+                <div className="flex items-center gap-1.5 mb-2 text-brand-rust">
+                  <Sparkles size={14} />
+                  <span className="text-[10px] font-bold uppercase tracking-wider">AI-Organized Summary</span>
+                </div>
+                <p className="text-sm text-brand-ink/90 font-medium leading-relaxed">{post.aiSummary}</p>
+              </div>
+
+              <div className="flex items-center justify-between pt-4 border-t border-brand-border/60">
+                <button onClick={handleInteract} className="flex items-center gap-1.5 text-brand-ink/50 hover:text-brand-rust transition-colors">
+                  <Heart size={16} />
+                  <span className="text-xs font-medium">{post.meTooCount} Ma Pani</span>
+                </button>
+                <button onClick={handleInteract} className="flex items-center gap-1.5 text-brand-green hover:text-brand-green/80 transition-colors bg-brand-green-light/30 px-3 py-1.5 rounded-full">
+                  <ShieldCheck size={14} />
+                  <span className="text-xs font-medium">{post.proResponses} Pro Responses</span>
+                </button>
+              </div>
+            </div>
+          );
+        })}
       </div>
-      
-      {/* Floating Action Button (Prompts Auth) */}
-      <button 
-        onClick={handleInteract}
+
+      {/* Floating Action Button */}
+      <button
+        onClick={onStartShare}
         className="absolute bottom-4 right-6 w-14 h-14 bg-brand-rust text-white rounded-full shadow-lg flex items-center justify-center hover:bg-brand-rust/90 transition-colors z-20"
       >
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
@@ -764,8 +1064,14 @@ function CommunityFeedScreen({ onBack }: { onBack: () => void }) {
 }
 
 function AiChatScreen({ context, onBack, onExplore, onConsult, onSaveJournal }: { context: string, onBack: () => void, onExplore: () => void, onConsult: () => void, onSaveJournal: (summary: string, mood: string, techniques: string[]) => void }) {
+  const getInitialMessage = (ctx: string) => {
+    if (ctx === 'family') return "Namaste, sathi\n\nIt takes courage to seek understanding for someone you care about. You are not alone in this — many families have walked this path. What have you been noticing?";
+    if (ctx === 'share') return "Namaste, sathi\n\nThank you for wanting to share your experience. Your story could help someone going through the same thing. Take your time — just start anywhere.";
+    return "Namaste, sathi\n\nSomething brought you here today. You do not have to explain it perfectly — just start anywhere.";
+  };
+
   const [messages, setMessages] = useState<{role: 'ai' | 'user' | 'action', text?: string, actions?: any[]}[]>([
-    { role: 'ai', text: "Namaste, sathi\n\nSomething brought you here today. You do not have to explain it perfectly — just start anywhere." }
+    { role: 'ai', text: getInitialMessage(context) }
   ]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -911,7 +1217,17 @@ function AiChatScreen({ context, onBack, onExplore, onConsult, onSaveJournal }: 
     }
   };
 
-  const initialPrompts = [
+  const initialPrompts = context === 'family' ? [
+    "My brother has been withdrawing lately",
+    "I don't know how to talk to my family about this",
+    "My parents think it's not serious, but I'm worried",
+    "How do I bring up mental health without stigma?"
+  ] : context === 'share' ? [
+    "I've been through something I want to share",
+    "My family didn't understand what I was going through",
+    "I found something that helped me cope",
+    "I want to help others who feel like I did"
+  ] : [
     "I feel empty but I do not know why",
     "I smile on the outside but inside I am exhausted",
     "I cannot sleep. My chest feels heavy every night.",
@@ -945,7 +1261,7 @@ function AiChatScreen({ context, onBack, onExplore, onConsult, onSaveJournal }: 
             <div className="w-16 h-16 bg-brand-rust/80 text-white rounded-full flex items-center justify-center font-serif text-2xl mb-4 shadow-sm">
               म
             </div>
-            <p className="text-brand-green text-xs font-medium mb-2">Understanding myself</p>
+            <p className="text-brand-green text-xs font-medium mb-2">{context === 'family' ? 'Supporting someone I love' : context === 'share' ? 'Sharing my experience' : 'Understanding myself'}</p>
             <h2 className="font-serif text-2xl font-semibold text-brand-ink mb-2">Namaste, sathi</h2>
             <p className="text-sm text-brand-ink/70 max-w-[260px]">
               Something brought you here today. You do not have to explain it perfectly — just start anywhere.
@@ -1459,7 +1775,7 @@ function PatientBriefScreen({ consult, onBack }: { consult: any, onBack: () => v
           </p>
           
           <div className="bg-brand-surface rounded-xl p-4 border border-brand-border/60">
-            <p className="text-xs font-semibold text-brand-ink/50 uppercase tracking-wider mb-2">Community Resonance</p>
+            <p className="text-xs font-semibold text-brand-ink/50 uppercase tracking-wider mb-2">Similar Patterns on Sahara</p>
             <p className="text-sm font-medium text-brand-ink flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-brand-green"></span>
               {consult.evidence}
