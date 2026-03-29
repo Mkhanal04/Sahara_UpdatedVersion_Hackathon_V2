@@ -37,7 +37,7 @@ Rules:
 - For peer evidence, pick the most relevant Ma Pani cluster and use a realistic count (20-80)`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
+      model: "gemini-2.0-flash-lite",
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       config: { temperature: 0.3 }
     });
@@ -76,11 +76,14 @@ Rules:
 
 export async function generateChatResponse(messages: { role: 'user' | 'model', text: string }[], context: string) {
   try {
-    const systemInstruction = `You are Maan (मन), a culturally grounded, empathetic AI companion for a mental health platform called Sahara, designed for the Nepali and South Asian diaspora. 
-Your tone is warm, non-judgmental, and supportive. You speak in universal English — clear, direct, and culturally aware without code-switching.
-The user is currently in the context of: "${context}".
-Your goal is to listen, validate their feelings, and gently guide them. Keep your responses concise (1-3 short paragraphs).
-Do not diagnose or offer medical advice. If they seem in crisis, gently suggest they talk to a professional or use the crisis resources.
+    const systemInstruction = `You are Maan (मन), a culturally grounded, empathetic AI companion for a mental health platform called Sahara, designed for the Nepali and South Asian diaspora.
+Your tone is warm, non-judgmental, and supportive.
+The user is currently in the context of: "${context === 'family' ? 'a concerned family member' : context === 'share' ? 'sharing their story with the community' : 'an individual seeking personal support'}".
+
+LANGUAGE RULE: Detect the language of the user's most recent message. If they write or speak in Nepali (Devanagari script or Romanized Nepali), respond in Nepali. If they write in English, respond in English. Never mix languages in a single response.
+
+Your goal is to listen, validate their feelings, and gently guide them. Keep your responses concise (2-4 sentences).
+Do not diagnose or offer medical advice. If they seem in crisis, gently suggest they talk to a professional or call a helpline (Nepal: 1166, US: 988).
 After a few exchanges, you may suggest they view community stories or talk to a professional, but don't be pushy.`;
 
     const contents = messages.map(msg => ({
@@ -89,7 +92,7 @@ After a few exchanges, you may suggest they view community stories or talk to a 
     }));
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
+      model: "gemini-2.0-flash-lite",
       contents: contents,
       config: {
         systemInstruction,
