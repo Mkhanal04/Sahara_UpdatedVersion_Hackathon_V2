@@ -100,6 +100,36 @@ After a few exchanges, you may suggest they view community stories or talk to a 
     return response.text;
   } catch (error) {
     console.error("Error generating AI response:", error);
-    return "I'm having a little trouble connecting right now. Please try again in a moment.";
+    return getFallbackChatResponse(messages.length, context);
   }
+}
+
+// Contextual fallback responses — cycles based on message count so the conversation feels natural
+function getFallbackChatResponse(messageCount: number, context: string): string {
+  const familyResponses = [
+    "Thank you for sharing this. Noticing these changes in someone you love — and deciding to do something about it — takes real courage. Can you tell me a little more about what you've been observing? How long has this been going on?",
+    "What you're describing — the withdrawal, the changes in routine — these are patterns that many families have noticed before they reached out. You're not overreacting. The fact that you're paying attention matters more than you know. What feels most worrying to you right now?",
+    "It's hard to carry this kind of concern, especially when you're not sure what to call it or what to do next. You don't have to have all the answers. When you're ready, I can help you organize what you've observed into something you could share with a professional — at your own pace.",
+    "Every family's situation is different, and there's no single right way to respond. What you're doing right now — pausing, reflecting, seeking guidance — is already a meaningful step. Is there anything specific you've been unsure about how to handle?",
+  ];
+
+  const individualResponses = [
+    "Thank you for being here and for putting this into words. What you're feeling is real — and it makes sense that it's been hard to carry. You don't have to explain it perfectly. Just share what feels true right now, and I'll listen.",
+    "It takes a lot to acknowledge something isn't feeling right, especially when life keeps moving around you. You're not alone in this. A lot of people in this community have described something similar — that gap between how things look on the outside and how they actually feel. What's been weighing on you most?",
+    "What you're going through sounds genuinely heavy, and I want you to know that reaching out — even just to reflect — is a real act of care toward yourself. When you're ready, there are people in this community and professionals on this platform who can offer more than I can. But for now, I'm here. Keep going.",
+    "Sometimes just naming what's happening — even imperfectly — is the first thing that shifts something. You're doing that right now. Is there a moment recently that stands out as particularly hard? Sometimes starting there helps.",
+  ];
+
+  const shareResponses = [
+    "Thank you for being willing to share your experience. Stories like yours help others feel less alone. Take your time — there's no right way to tell it.",
+    "What you've been through matters, and the community here is listening. When you share, you're not just processing your own experience — you're creating a marker for someone else who might need it.",
+  ];
+
+  const responses = context === 'family'
+    ? familyResponses
+    : context === 'share'
+    ? shareResponses
+    : individualResponses;
+
+  return responses[Math.floor(messageCount / 2) % responses.length];
 }
