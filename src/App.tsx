@@ -287,9 +287,9 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 sm:p-8">
+    <div className="min-h-[100dvh] flex items-center justify-center sm:p-4 md:p-8 overflow-hidden">
       {/* Mobile Shell Container */}
-      <div className="w-full max-w-[390px] h-[844px] max-h-[90vh] bg-brand-bg rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col relative border-4 border-white">
+      <div className="w-full h-[100dvh] max-w-md sm:h-[844px] sm:max-h-[min(90vh,844px)] sm:w-[390px] sm:min-w-[390px] bg-brand-bg sm:rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col relative sm:border-[8px] sm:border-white shrink-0">
         
         {/* Content Area */}
         <div className="flex-1 overflow-y-auto relative scrollbar-hide animate-page-in" key={currentView}>
