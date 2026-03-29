@@ -318,7 +318,7 @@ export default function App() {
           {currentView === 'community-feed' && <CommunityFeedScreen onBack={goBack} onStartShare={() => { setChatContext('share'); setCurrentView('ai-chat'); }} userType={userType} userName={userName} onAuthRequired={() => setShowSignUpPrompt(true)} t={t} />}
           {currentView === 'user-journal' && (
             journalUnlocked
-              ? <JournalScreen entries={journalEntries} onBack={goBack} />
+              ? <JournalScreen entries={journalEntries} onBack={goBack} onStartChat={() => { setChatContext('individual'); setCurrentView('ai-chat'); }} />
               : <JournalPinScreen onUnlock={() => setJournalUnlocked(true)} onSkip={() => setJournalUnlocked(true)} onBack={goBack} />
           )}
           {currentView === 'login' && <LoginScreen onLogin={handleLogin} onBack={goBack} />}
@@ -1031,7 +1031,7 @@ function JournalPinScreen({ onUnlock, onSkip, onBack }: { onUnlock: () => void, 
   );
 }
 
-function JournalScreen({ entries, onBack }: { entries: any[], onBack: () => void }) {
+function JournalScreen({ entries, onBack, onStartChat }: { entries: any[], onBack: () => void, onStartChat?: () => void }) {
   return (
     <div className="flex flex-col h-full bg-brand-bg relative">
       <div className="bg-brand-bg/90 backdrop-blur-md z-10 px-6 py-6 border-b border-brand-border flex items-center gap-4 sticky top-0">
@@ -1048,7 +1048,7 @@ function JournalScreen({ entries, onBack }: { entries: any[], onBack: () => void
         </div>
       </div>
       
-      <div className="flex-1 overflow-y-auto p-6 space-y-4 pb-24">
+      <div className="flex-1 overflow-y-auto p-6 space-y-4 pb-24 relative">
         {entries.map((entry: any) => (
           <div key={entry.id} className="bg-brand-surface p-5 rounded-2xl shadow-sm border border-brand-border">
             <div className="flex justify-between items-start mb-3">
@@ -1081,6 +1081,18 @@ function JournalScreen({ entries, onBack }: { entries: any[], onBack: () => void
           </div>
         )}
       </div>
+      {/* Floating Action Button for New Entry */}
+      {onStartChat && (
+        <div className="absolute bottom-6 right-6 z-20">
+          <button 
+            onClick={onStartChat}
+            className="w-14 h-14 rounded-full bg-brand-rust text-[#FDF6F0] shadow-[0_8px_16px_rgba(189,111,88,0.3)] flex items-center justify-center hover:bg-brand-rust/90 transition-transform hover:scale-105 active:scale-95 group"
+            aria-label="New Voice Entry"
+          >
+            <Mic size={24} className="group-hover:-translate-y-0.5 transition-transform" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -1791,7 +1803,7 @@ function AiChatScreen({ context, onBack, onExplore, onConsult, onSaveJournal, on
                 onClick={() => handleSend(inputValue)}
                 aria-label="Send message"
                 disabled={isLoading}
-                className="w-11 h-11 rounded-full bg-brand-rust/80 text-[#FDF6F0] flex items-center justify-center hover:bg-brand-rust transition-colors shrink-0 disabled:opacity-50"
+                className="w-11 h-11 rounded-full bg-brand-rust text-[#FDF6F0] shadow-sm flex items-center justify-center hover:bg-brand-rust/90 transition-transform hover:scale-105 active:scale-95 shrink-0 disabled:opacity-50"
               >
                 <Send size={16} />
               </button>
@@ -1800,7 +1812,7 @@ function AiChatScreen({ context, onBack, onExplore, onConsult, onSaveJournal, on
                 onClick={toggleRecording}
                 aria-label="Voice input"
                 disabled={isLoading}
-                className="w-11 h-11 rounded-full bg-brand-surface-alt border border-brand-border text-brand-ink flex items-center justify-center hover:bg-brand-border transition-colors shrink-0 disabled:opacity-50"
+                className="w-11 h-11 rounded-full bg-brand-rust text-[#FDF6F0] shadow-sm flex items-center justify-center hover:bg-brand-rust/90 transition-transform hover:scale-105 active:scale-95 shrink-0 disabled:opacity-50"
               >
                 <Mic size={18} />
               </button>
