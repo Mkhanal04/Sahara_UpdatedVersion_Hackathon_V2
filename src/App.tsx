@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { ShieldCheck, Lock, FileText, Calendar, Users, Home, ThumbsUp, ThumbsDown, ArrowRight, ChevronLeft, MessageCircle, AlertCircle, Heart, UserPlus, Eye, Sparkles, Send, User, Edit3, Phone, Mic, Square, BookOpen, Activity, Info, Shield, Globe, Bot, BarChart3 } from 'lucide-react';
+import { ShieldCheck, Lock, FileText, Calendar, Users, Home, ThumbsUp, ThumbsDown, ArrowRight, ChevronLeft, MessageCircle, AlertCircle, Heart, UserPlus, Eye, Sparkles, Send, User, Edit3, Phone, Mic, Square, BookOpen, Activity, Info, Shield, Globe, Bot, BarChart3, LogOut } from 'lucide-react';
 import { generateChatResponse, generateObservationSummary } from './services/geminiService';
 
 // --- LANGUAGE STRINGS ---
@@ -302,8 +302,8 @@ export default function App() {
               t={t}
             />
           )}
-          {currentView === 'user-home' && <UserHomeScreen onStartChat={(ctx) => { setChatContext(ctx); setAutoStartMicNext(false); setCurrentView('ai-chat'); }} onExplore={() => setCurrentView('community-feed')} userType={userType} userName={userName} language={language} setLanguage={setLanguage} t={t} />}
-          {currentView === 'admin' && <AdminDashboardScreen onBack={goBack} />}
+          {currentView === 'user-home' && <UserHomeScreen onStartChat={(ctx) => { setChatContext(ctx); setAutoStartMicNext(false); setCurrentView('ai-chat'); }} onExplore={() => setCurrentView('community-feed')} userType={userType} userName={userName} language={language} setLanguage={setLanguage} t={t} onLogout={() => setCurrentView('demo-select')} />}
+          {currentView === 'admin' && <AdminDashboardScreen onBack={goBack} onLogout={() => setCurrentView('demo-select')} />}
           {currentView === 'ai-chat' && <AiChatScreen context={chatContext} onBack={goBack} onExplore={() => setCurrentView('community-feed')} onConsult={() => { setBookingType(chatContext === 'family' ? 'Family Guidance' : 'Individual Session'); setBookingStep('browse'); setCurrentView('user-consultation'); }} onSaveJournal={handleSaveJournal} onGenerateSummary={(msgs) => { setChatMessages(msgs); setCurrentView('user-summary'); }} autoStartMic={autoStartMicNext} />}
           {currentView === 'user-summary' && (
             <SummaryScreen
@@ -323,7 +323,7 @@ export default function App() {
               : <JournalPinScreen onUnlock={() => setJournalUnlocked(true)} onSkip={() => setJournalUnlocked(true)} onBack={goBack} />
           )}
           {currentView === 'login' && <LoginScreen onLogin={handleLogin} onBack={goBack} />}
-          {currentView === 'queue' && <DashboardScreen consultations={dynamicConsultations} onViewBrief={handleViewBrief} />}
+          {currentView === 'queue' && <DashboardScreen consultations={dynamicConsultations} onViewBrief={handleViewBrief} onLogout={() => setCurrentView('demo-select')} />}
           {currentView === 'schedule' && <ScheduleScreen />}
           {currentView === 'profile' && <ProfileScreen />}
           {currentView === 'clients' && <ClientsScreen onViewClient={handleViewClient} />}
@@ -769,7 +769,7 @@ function HelpScreen({ onBack, onHome }: { onBack: () => void, onHome: () => void
   );
 }
 
-function UserHomeScreen({ onStartChat, onExplore, userType, userName, language, setLanguage, t }: { onStartChat: (context: string) => void, onExplore: () => void, userType: 'guest' | 'user', userName: string, language: Language, setLanguage: (l: Language) => void, t: (key: string) => string }) {
+function UserHomeScreen({ onStartChat, onExplore, userType, userName, language, setLanguage, t, onLogout }: { onStartChat: (context: string) => void, onExplore: () => void, userType: 'guest' | 'user', userName: string, language: Language, setLanguage: (l: Language) => void, t: (key: string) => string, onLogout: () => void }) {
   return (
     <div className="flex flex-col h-full bg-brand-bg relative pb-24">
       {/* Header */}
@@ -795,6 +795,13 @@ function UserHomeScreen({ onStartChat, onExplore, userType, userName, language, 
           }`}>
             {userType === 'guest' ? '?' : userName.charAt(0)}
           </div>
+          <button
+            onClick={onLogout}
+            aria-label="Back to Demo Select"
+            className="w-8 h-8 rounded-full bg-brand-surface-alt border border-brand-border flex items-center justify-center text-brand-ink hover:text-brand-rust transition-colors ml-1"
+          >
+            <LogOut size={14} />
+          </button>
         </div>
       </div>
       {userType === 'guest' && (
@@ -1967,7 +1974,7 @@ function SummaryScreen({
   );
 }
 
-function DashboardScreen({ consultations, onViewBrief }: { consultations: typeof CONSULTATIONS, onViewBrief: (id: string) => void }) {
+function DashboardScreen({ consultations, onViewBrief, onLogout }: { consultations: typeof CONSULTATIONS, onViewBrief: (id: string) => void, onLogout: () => void }) {
   return (
     <div className="p-6 pb-24">
       <div className="flex justify-between items-end mb-8 mt-4">
@@ -1975,8 +1982,17 @@ function DashboardScreen({ consultations, onViewBrief }: { consultations: typeof
           <p className="text-brand-rust font-medium text-sm mb-1 italic">Today's Queue</p>
           <h1 className="font-serif text-3xl font-semibold text-brand-ink">Namaste, Dr. Sharma</h1>
         </div>
-        <div className="w-10 h-10 rounded-full bg-brand-surface border border-brand-border flex items-center justify-center shadow-sm">
-          <Calendar size={18} className="text-brand-ink/60" />
+        <div className="flex items-center gap-2">
+          <div className="w-10 h-10 rounded-full bg-brand-surface border border-brand-border flex items-center justify-center shadow-sm">
+            <Calendar size={18} className="text-brand-ink/60" />
+          </div>
+          <button 
+            onClick={onLogout}
+            className="w-10 h-10 rounded-full bg-brand-surface-alt border border-brand-border flex items-center justify-center text-brand-ink hover:text-brand-rust transition-colors shadow-sm ml-1"
+            aria-label="Back to Demo Select"
+          >
+            <LogOut size={16} />
+          </button>
         </div>
       </div>
 
@@ -2408,7 +2424,7 @@ function PatientBriefScreen({ consult, onBack }: { consult: any, onBack: () => v
 }
 
 /* ─── Admin Dashboard Screen ────────────────────────────────── */
-function AdminDashboardScreen({ onBack }: { onBack: () => void }) {
+function AdminDashboardScreen({ onBack, onLogout }: { onBack: () => void, onLogout: () => void }) {
   const [activeTab, setActiveTab] = React.useState<'dashboard' | 'postmvp'>('dashboard');
 
   return (
@@ -2416,13 +2432,22 @@ function AdminDashboardScreen({ onBack }: { onBack: () => void }) {
       {/* Header */}
       <div className="px-5 pt-4 pb-3 border-b border-brand-border">
         <div className="flex items-center justify-between mb-1">
-          <button
-            onClick={onBack}
-            className="w-9 h-9 rounded-full bg-brand-surface border border-brand-border flex items-center justify-center text-brand-ink/60 hover:bg-brand-surface-alt transition-colors"
-            aria-label="Back to home"
-          >
-            <ChevronLeft size={18} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onBack}
+              className="w-9 h-9 rounded-full bg-brand-surface border border-brand-border flex items-center justify-center text-brand-ink/60 hover:bg-brand-surface-alt transition-colors"
+              aria-label="Back to home"
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <button
+              onClick={onLogout}
+              className="w-9 h-9 rounded-full bg-brand-surface border border-brand-border flex items-center justify-center text-brand-ink hover:text-brand-rust transition-colors shadow-sm"
+              aria-label="Back to Demo Select"
+            >
+              <LogOut size={16} />
+            </button>
+          </div>
           <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-green-600 bg-green-50 px-2.5 py-1 rounded-full">
             <span className="w-1.5 h-1.5 rounded-full bg-green-600 inline-block" />
             All Systems Healthy
