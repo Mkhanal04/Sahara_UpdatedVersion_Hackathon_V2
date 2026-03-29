@@ -23,12 +23,12 @@ export async function generateObservationSummary(
       ? {
           summary: "Family member reports social withdrawal over approximately 3 weeks, irregular sleep patterns, and disengagement from work. Family interprets behavior as laziness. Observer recognizes deeper issue and seeks guidance.",
           patterns: ["Social withdrawal (3 weeks)", "Sleep pattern changes", "Work disengagement", "Family misinterpretation"],
-          peerEvidence: "Resonated with: Social Withdrawal (47 families)"
+          peerEvidence: "Resonated with: Social Withdrawal (124 families)"
         }
       : {
           summary: "Individual reports persistent feelings of exhaustion despite outward composure. Difficulty sleeping, chest heaviness at night. Seeking culturally-grounded understanding of their experience.",
           patterns: ["Emotional exhaustion", "Sleep disruption", "Somatic symptoms", "Desire for cultural context"],
-          peerEvidence: "Resonated with: Sleep Changes (32 individuals)"
+          peerEvidence: "Resonated with: Academic Pressure (89 individuals)"
         };
   }
 }
