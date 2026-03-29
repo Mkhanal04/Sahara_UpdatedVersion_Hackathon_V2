@@ -1329,6 +1329,39 @@ function CommunityFeedScreen({ onBack, onStartShare, userType, userName, onAuthR
           <span className="text-xs font-medium text-brand-rust">Share →</span>
         </div>
 
+        {/* Clinically Grounded Resources */}
+        {activeFilter === 'All' && (
+          <div className="mb-2 mt-2">
+            <h2 className="text-sm font-bold text-brand-ink mb-3 px-1">Clinically-Grounded Resources</h2>
+            <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
+              <a href="/content/family-psychoeducation-guide.pdf" target="_blank" rel="noopener noreferrer" className="shrink-0 w-64 bg-brand-rust text-[#FDF6F0] rounded-2xl p-4 shadow-sm relative overflow-hidden group block">
+                <p className="text-xs font-bold uppercase tracking-wider opacity-80 mb-2">Guide</p>
+                <h3 className="font-serif text-lg font-medium leading-tight pr-4">When Someone You Love Is Struggling</h3>
+                <div className="mt-6 flex items-center justify-between">
+                  <span className="text-xs font-medium bg-black/10 px-2 py-1 rounded-md">View PDF</span>
+                  <ArrowRight size={16} className="opacity-100 sm:opacity-0 sm:translate-x-[-10px] sm:group-hover:opacity-100 sm:group-hover:translate-x-0 transition-all" />
+                </div>
+              </a>
+              <a href="/content/individual-wellness-guide.pdf" target="_blank" rel="noopener noreferrer" className="shrink-0 w-64 bg-brand-green text-[#FDF6F0] rounded-2xl p-4 shadow-sm relative overflow-hidden group block">
+                <p className="text-xs font-bold uppercase tracking-wider opacity-80 mb-2">Self-Care</p>
+                <h3 className="font-serif text-lg font-medium leading-tight pr-4">Understanding What You're Feeling</h3>
+                <div className="mt-6 flex items-center justify-between">
+                  <span className="text-xs font-medium bg-black/10 px-2 py-1 rounded-md">View PDF</span>
+                  <ArrowRight size={16} className="opacity-100 sm:opacity-0 sm:translate-x-[-10px] sm:group-hover:opacity-100 sm:group-hover:translate-x-0 transition-all" />
+                </div>
+              </a>
+              <a href="/content/cultural-context-community.pdf" target="_blank" rel="noopener noreferrer" className="shrink-0 w-64 bg-brand-surface border border-brand-border text-brand-ink rounded-2xl p-4 shadow-sm relative overflow-hidden group block">
+                <p className="text-xs font-bold uppercase tracking-wider text-brand-ink/50 mb-2">Context</p>
+                <h3 className="font-serif text-lg font-medium leading-tight pr-4">Mental Health in Nepali Families</h3>
+                <div className="mt-6 flex items-center justify-between">
+                  <span className="text-xs font-medium bg-brand-bg px-2 py-1 rounded-md border border-brand-border text-brand-ink/70">View PDF</span>
+                  <ArrowRight size={16} className="text-brand-rust opacity-100 sm:opacity-0 sm:translate-x-[-10px] sm:group-hover:opacity-100 sm:group-hover:translate-x-0 transition-all" />
+                </div>
+              </a>
+            </div>
+          </div>
+        )}
+
         {/* Posts */}
         {FEED_POSTS.filter(p => activeFilter === 'All' || p.tag === activeFilter).map((post) => {
           // Expert card
@@ -1790,7 +1823,7 @@ function SummaryScreen({
 }: {
   context: string,
   messages: { role: 'user' | 'model', text: string }[],
-  generatedSummary: { summary: string; patterns: string[]; peerEvidence: string } | null,
+  generatedSummary: { summary: string; patterns: string[]; peerEvidence: string; sources?: { title: string, url: string }[] } | null,
   setGeneratedSummary: (s: any) => void,
   onConsult: () => void,
   onBack: () => void,
@@ -1857,6 +1890,23 @@ function SummaryScreen({
               <p className="text-sm text-brand-ink/70">{generatedSummary.peerEvidence}</p>
               <p className="text-[10px] text-brand-ink/50 mt-2">Based on anonymous community patterns. Counts are from real stories shared on this platform.</p>
             </div>
+
+            {generatedSummary.sources && generatedSummary.sources.length > 0 && (
+              <div className="bg-brand-surface rounded-2xl p-5 border border-brand-border shadow-sm">
+                <div className="flex items-center gap-2 mb-3">
+                  <BookOpen size={16} className="text-brand-rust" />
+                  <span className="text-xs font-bold uppercase tracking-wider text-brand-rust">Grounded In</span>
+                </div>
+                <div className="space-y-3">
+                  {generatedSummary.sources.map((s: any, i: number) => (
+                    <a key={i} href={s.url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between group">
+                      <p className="text-sm font-medium text-brand-ink group-hover:text-brand-rust transition-colors">{s.title}</p>
+                      <ArrowRight size={14} className="text-brand-ink/30 group-hover:text-brand-rust transition-colors" />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="bg-brand-bg rounded-xl p-4 border border-brand-border/50">
               <div className="flex items-start gap-2">

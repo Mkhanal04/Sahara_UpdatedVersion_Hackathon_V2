@@ -3,7 +3,7 @@
 export async function generateObservationSummary(
   messages: { role: 'user' | 'model', text: string }[],
   context: string
-): Promise<{ summary: string; patterns: string[]; peerEvidence: string }> {
+): Promise<{ summary: string; patterns: string[]; peerEvidence: string; sources?: { title: string, url: string }[] }> {
   try {
     const response = await fetch('/api/summary', {
       method: 'POST',

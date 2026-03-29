@@ -47,33 +47,57 @@ Rules:
 
     const text = response.text || '';
     const jsonMatch = text.match(/\{[\s\S]*\}/);
+    const sources = context === 'family' 
+      ? [
+          { title: "When Someone You Love Is Struggling", url: "/content/family-psychoeducation-guide.pdf" },
+          { title: "Mental Health in Nepali Families", url: "/content/cultural-context-community.pdf" }
+        ]
+      : [
+          { title: "Understanding What You're Feeling", url: "/content/individual-wellness-guide.pdf" },
+          { title: "Mental Health in Nepali Families", url: "/content/cultural-context-community.pdf" }
+        ];
+
     if (jsonMatch) {
       const parsed = JSON.parse(jsonMatch[0]);
       return res.status(200).json({
         summary: parsed.summary || 'Summary could not be generated.',
         patterns: parsed.patterns || [],
-        peerEvidence: parsed.peerEvidence || 'Similar patterns found on Sahara'
+        peerEvidence: parsed.peerEvidence || 'Similar patterns found on Sahara',
+        sources
       });
     }
 
     return res.status(200).json({
       summary: text.slice(0, 200),
       patterns: ['Observation noted'],
-      peerEvidence: 'Similar patterns found on Sahara'
+      peerEvidence: 'Similar patterns found on Sahara',
+      sources
     });
   } catch (error) {
     console.error("Error generating summary in API:", error);
+    const sources = context === 'family' 
+      ? [
+          { title: "When Someone You Love Is Struggling", url: "/content/family-psychoeducation-guide.pdf" },
+          { title: "Mental Health in Nepali Families", url: "/content/cultural-context-community.pdf" }
+        ]
+      : [
+          { title: "Understanding What You're Feeling", url: "/content/individual-wellness-guide.pdf" },
+          { title: "Mental Health in Nepali Families", url: "/content/cultural-context-community.pdf" }
+        ];
+
     return res.status(200).json(
       context === 'family'
         ? {
             summary: "Family member reports social withdrawal over approximately 3 weeks, irregular sleep patterns, and disengagement from work. Family interprets behavior as laziness. Observer recognizes deeper issue and seeks guidance.",
             patterns: ["Social withdrawal (3 weeks)", "Sleep pattern changes", "Work disengagement", "Family misinterpretation"],
-            peerEvidence: "Resonated with: Social Withdrawal (47 families)"
+            peerEvidence: "Resonated with: Social Withdrawal (47 families)",
+            sources
           }
         : {
             summary: "Individual reports persistent feelings of exhaustion despite outward composure. Difficulty sleeping, chest heaviness at night. Seeking culturally-grounded understanding of their experience.",
             patterns: ["Emotional exhaustion", "Sleep disruption", "Somatic symptoms", "Desire for cultural context"],
-            peerEvidence: "Resonated with: Sleep Changes (32 individuals)"
+            peerEvidence: "Resonated with: Sleep Changes (32 individuals)",
+            sources
           }
     );
   }
