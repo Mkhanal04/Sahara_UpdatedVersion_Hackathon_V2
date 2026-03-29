@@ -148,7 +148,7 @@ export default function App() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 sm:p-8">
       {/* Mobile Shell Container */}
-      <div className="w-full max-w-md h-[850px] max-h-[90vh] bg-brand-bg rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col relative border-4 border-white">
+      <div className="w-full max-w-[390px] h-[844px] max-h-[90vh] bg-brand-bg rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col relative border-4 border-white">
         
         {/* Top Crisis Banner */}
         <div className="bg-[#4A3B36] text-white text-xs font-medium py-2 px-4 text-center z-50">
@@ -403,9 +403,9 @@ function HelpScreen({ onBack, onHome }: { onBack: () => void, onHome: () => void
 
 function UserHomeScreen({ onStartChat, onExplore }: { onStartChat: (context: string) => void, onExplore: () => void }) {
   return (
-    <div className="flex flex-col h-full bg-brand-bg relative pb-6">
+    <div className="flex flex-col h-full bg-brand-bg relative pb-24">
       {/* Header */}
-      <div className="px-6 py-6 flex items-center justify-between">
+      <div className="px-6 py-6 flex items-center justify-between border-b border-brand-border">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-brand-rust text-white rounded-full flex items-center justify-center font-serif text-lg shadow-sm">
             S
@@ -673,7 +673,7 @@ function CommunityFeedScreen({ onBack }: { onBack: () => void }) {
           >
             <ChevronLeft size={20} />
           </button>
-          <div className="w-10 h-10 bg-brand-rust text-white rounded-xl flex items-center justify-center font-serif text-xl shadow-sm">
+          <div className="w-10 h-10 bg-brand-rust text-white rounded-full flex items-center justify-center font-serif text-xl shadow-sm">
             S
           </div>
         </div>
@@ -695,7 +695,7 @@ function CommunityFeedScreen({ onBack }: { onBack: () => void }) {
       </div>
 
       {/* Feed */}
-      <div className="p-6 space-y-4 pb-24">
+      <div className="flex-1 overflow-y-auto p-6 space-y-4 pb-20">
         {FEED_POSTS.map((post) => (
           <div key={post.id} className="bg-brand-surface rounded-[1.5rem] p-5 border border-brand-border shadow-sm">
             <div className="flex justify-between items-start mb-4">
@@ -755,7 +755,7 @@ function CommunityFeedScreen({ onBack }: { onBack: () => void }) {
       {/* Floating Action Button (Prompts Auth) */}
       <button 
         onClick={handleInteract}
-        className="absolute bottom-8 right-6 w-14 h-14 bg-brand-rust text-white rounded-full shadow-lg flex items-center justify-center hover:bg-brand-rust/90 transition-colors z-20"
+        className="absolute bottom-4 right-6 w-14 h-14 bg-brand-rust text-white rounded-full shadow-lg flex items-center justify-center hover:bg-brand-rust/90 transition-colors z-20"
       >
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
       </button>
