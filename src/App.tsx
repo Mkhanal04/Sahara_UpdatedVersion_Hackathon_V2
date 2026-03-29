@@ -787,12 +787,7 @@ function UserHomeScreen({ onStartChat, onExplore, userType, userName, language, 
     <div className="flex flex-col h-full bg-brand-bg relative pb-24">
       {/* Header */}
       <div className="px-6 py-6 flex items-center justify-between border-b border-brand-border">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-brand-rust text-brand-on-rust rounded-full flex items-center justify-center font-serif text-lg shadow-sm">
-            S
-          </div>
-          <span className="font-serif text-xl font-semibold text-brand-ink">Sahara</span>
-        </div>
+        <span className="font-serif text-xl font-semibold text-brand-ink">Sahara</span>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setLanguage(language === 'en' ? 'ne' : 'en')}
