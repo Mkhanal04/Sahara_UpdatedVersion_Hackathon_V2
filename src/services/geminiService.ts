@@ -74,7 +74,37 @@ Rules:
   }
 }
 
+// --- CRISIS DETECTION (Layer 1 — deterministic, never reaches the LLM) ---
+const CRISIS_PATTERNS = [
+  // English
+  /\b(kill\s*(my)?self|suicide|suicidal|end\s*my\s*life|want\s*to\s*die|don'?t\s*want\s*to\s*(live|be\s*alive)|self[- ]?harm|cut\s*myself|hurt\s*myself|no\s*reason\s*to\s*live|can'?t\s*go\s*on|give\s*up\s*on\s*life)\b/i,
+  // Romanized Nepali
+  /\b(marna\s*man|aatma\s*hatya|bachna\s*man\s*chaina|jiuna\s*man\s*chaina|mardichhu|marchu)\b/i,
+  // Devanagari
+  /मर्न\s*मन|आत्महत्या|बाँच्न\s*मन\s*छैन|जिउन\s*मन\s*छैन/,
+];
+
+const CRISIS_RESPONSE = `I hear you, and I'm glad you're here.
+
+What you're feeling right now matters — and you don't have to face it alone. Please reach out to someone who can help right now:
+
+🇳🇵 Nepal: 1166 (National Mental Health Helpline)
+🇺🇸 US: 988 (Suicide & Crisis Lifeline)
+
+You can call or text, any time. If you're in immediate danger, please call emergency services.
+
+I'm not able to give you what you need in this moment — but the people on those lines can. Will you reach out?`;
+
+function detectCrisis(messages: { role: 'user' | 'model', text: string }[]): boolean {
+  const lastUserMessage = [...messages].reverse().find(m => m.role === 'user');
+  if (!lastUserMessage) return false;
+  return CRISIS_PATTERNS.some(pattern => pattern.test(lastUserMessage.text));
+}
+
 export async function generateChatResponse(messages: { role: 'user' | 'model', text: string }[], context: string) {
+  // Layer 1: deterministic crisis intercept — never reaches the LLM
+  if (detectCrisis(messages)) return CRISIS_RESPONSE;
+
   try {
     const systemInstruction = `You are Maan (मन), a culturally grounded, empathetic AI companion for a mental health platform called Sahara, designed for the Nepali and South Asian diaspora.
 Your tone is warm, non-judgmental, and supportive.
