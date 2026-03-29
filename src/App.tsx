@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { ShieldCheck, Lock, FileText, Calendar, Users, Home, ThumbsUp, ThumbsDown, ArrowRight, ChevronLeft, MessageCircle, AlertCircle, Heart, UserPlus, Eye, Sparkles, Send, User, Edit3, Phone, Mic, Square, BookOpen, Activity, Info } from 'lucide-react';
+import { ShieldCheck, Lock, FileText, Calendar, Users, Home, ThumbsUp, ThumbsDown, ArrowRight, ChevronLeft, MessageCircle, AlertCircle, Heart, UserPlus, Eye, Sparkles, Send, User, Edit3, Phone, Mic, Square, BookOpen, Activity, Info, Shield, Globe, Bot, BarChart3 } from 'lucide-react';
 import { generateChatResponse, generateObservationSummary } from './services/geminiService';
 
 // --- LANGUAGE STRINGS ---
@@ -301,7 +301,8 @@ export default function App() {
               t={t}
             />
           )}
-          {currentView === 'user-home' && <UserHomeScreen onStartChat={(ctx) => { setChatContext(ctx); setCurrentView('ai-chat'); }} onExplore={() => setCurrentView('community-feed')} userType={userType} userName={userName} language={language} setLanguage={setLanguage} t={t} />}
+          {currentView === 'user-home' && <UserHomeScreen onStartChat={(ctx) => { setChatContext(ctx); setCurrentView('ai-chat'); }} onExplore={() => setCurrentView('community-feed')} onAdmin={() => setCurrentView('admin')} userType={userType} userName={userName} language={language} setLanguage={setLanguage} t={t} />}
+          {currentView === 'admin' && <AdminDashboardScreen onBack={goBack} />}
           {currentView === 'ai-chat' && <AiChatScreen context={chatContext} onBack={goBack} onExplore={() => setCurrentView('community-feed')} onConsult={() => { setBookingType(chatContext === 'family' ? 'Family Guidance' : 'Individual Session'); setBookingStep('browse'); setCurrentView('user-consultation'); }} onSaveJournal={handleSaveJournal} onGenerateSummary={(msgs) => { setChatMessages(msgs); setCurrentView('user-summary'); }} />}
           {currentView === 'user-summary' && (
             <SummaryScreen
@@ -753,7 +754,7 @@ function HelpScreen({ onBack, onHome }: { onBack: () => void, onHome: () => void
   );
 }
 
-function UserHomeScreen({ onStartChat, onExplore, userType, userName, language, setLanguage, t }: { onStartChat: (context: string) => void, onExplore: () => void, userType: 'guest' | 'user', userName: string, language: Language, setLanguage: (l: Language) => void, t: (key: string) => string }) {
+function UserHomeScreen({ onStartChat, onExplore, onAdmin, userType, userName, language, setLanguage, t }: { onStartChat: (context: string) => void, onExplore: () => void, onAdmin: () => void, userType: 'guest' | 'user', userName: string, language: Language, setLanguage: (l: Language) => void, t: (key: string) => string }) {
   return (
     <div className="flex flex-col h-full bg-brand-bg relative pb-24">
       {/* Header */}
@@ -826,6 +827,18 @@ function UserHomeScreen({ onStartChat, onExplore, userType, userName, language, 
               <h3 className="font-serif text-lg font-semibold text-brand-ink mb-0.5 line-clamp-2">{t('home.door.share.title')}</h3>
               <p className="text-xs text-brand-ink/60">{t('home.door.share.desc')}</p>
             </div>
+          </button>
+
+          {/* Admin Portal — demo only */}
+          <button onClick={onAdmin} className="w-full bg-brand-surface border border-brand-border hover:bg-brand-surface-alt rounded-2xl p-4 text-left transition-colors shadow-sm flex items-center gap-3 group mt-2">
+            <div className="w-10 h-10 rounded-full bg-brand-ink/5 flex items-center justify-center text-brand-ink/40 shrink-0">
+              <Shield size={18} />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-serif text-sm font-semibold text-brand-ink/60 mb-0.5">Admin Portal</h3>
+              <p className="text-xs text-brand-ink/40">Platform monitoring &amp; oversight</p>
+            </div>
+            <ArrowRight size={14} className="text-brand-ink/20 group-hover:text-brand-ink/40 transition-colors shrink-0" />
           </button>
         </div>
 
@@ -2312,6 +2325,174 @@ function PatientBriefScreen({ consult, onBack }: { consult: any, onBack: () => v
           )}
         </div>
 
+      </div>
+    </div>
+  );
+}
+
+/* ─── Admin Dashboard Screen ────────────────────────────────── */
+function AdminDashboardScreen({ onBack }: { onBack: () => void }) {
+  const [activeTab, setActiveTab] = React.useState<'dashboard' | 'postmvp'>('dashboard');
+
+  return (
+    <div className="flex flex-col h-full bg-brand-bg">
+      {/* Header */}
+      <div className="px-5 pt-4 pb-3 border-b border-brand-border">
+        <div className="flex items-center justify-between mb-1">
+          <button
+            onClick={onBack}
+            className="w-9 h-9 rounded-full bg-brand-surface border border-brand-border flex items-center justify-center text-brand-ink/60 hover:bg-brand-surface-alt transition-colors"
+            aria-label="Back to home"
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-green-600 bg-green-50 px-2.5 py-1 rounded-full">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-600 inline-block" />
+            All Systems Healthy
+          </span>
+        </div>
+        <h1 className="font-serif text-2xl font-semibold text-brand-ink mt-1">Admin Dashboard</h1>
+        <p className="text-xs text-brand-ink/50 mt-0.5">Platform monitoring · Last updated 2 min ago</p>
+      </div>
+
+      {/* Tab Bar */}
+      <div className="border-b border-brand-border flex">
+        <button
+          onClick={() => setActiveTab('dashboard')}
+          className={`flex-1 text-center py-3 text-xs font-semibold border-b-2 transition-colors ${
+            activeTab === 'dashboard' ? 'text-brand-rust border-brand-rust' : 'text-brand-ink/40 border-transparent hover:text-brand-ink'
+          }`}
+        >
+          Dashboard
+        </button>
+        <button
+          onClick={() => setActiveTab('postmvp')}
+          className={`flex-1 text-center py-3 text-xs font-semibold border-b-2 transition-colors ${
+            activeTab === 'postmvp' ? 'text-brand-rust border-brand-rust' : 'text-brand-ink/40 border-transparent hover:text-brand-ink'
+          }`}
+        >
+          Post-MVP Roadmap
+        </button>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto px-5 py-5">
+        {activeTab === 'dashboard' ? (
+          <>
+            {/* Stats Grid */}
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              {[
+                { label: 'AI Quality Score', value: '4.2', delta: '↑ 0.3 this week', color: 'text-brand-ink' },
+                { label: 'Crisis Signals Missed', value: '0', delta: 'Perfect record', color: 'text-green-600' },
+                { label: 'Families Supported', value: '247', delta: '↑ 18 this week', color: 'text-brand-rust' },
+                { label: 'Individuals', value: '31', delta: '↑ 7 this week', color: 'text-brand-rust' },
+              ].map((s) => (
+                <div key={s.label} className="bg-brand-surface border border-brand-border rounded-2xl p-4">
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-brand-ink/40 mb-1.5">{s.label}</p>
+                  <p className={`font-serif text-3xl leading-none ${s.color}`}>{s.value}</p>
+                  <p className="text-[10px] font-semibold mt-1 text-green-600">{s.delta}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Safety */}
+            <p className="text-[10px] font-bold uppercase tracking-widest text-brand-ink/40 mt-5 mb-2.5">Safety & HCAI Compliance</p>
+            <div className="bg-brand-surface border border-brand-border rounded-2xl p-4 mb-3">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-7 h-7 rounded-xl bg-green-50 flex items-center justify-center">
+                  <ShieldCheck size={14} className="text-green-600" />
+                </div>
+                <span className="font-serif text-sm font-semibold text-brand-ink">Automated Checks</span>
+              </div>
+              {[
+                { label: 'No diagnostic language in AI output', status: 'pass' as const },
+                { label: 'Crisis hotline on every screen', status: 'pass' as const },
+                { label: 'AI grounding accuracy', text: '96.2%', status: 'pass' as const },
+                { label: 'Transparency link on AI summaries', status: 'pass' as const },
+                { label: 'Demographic bias check', text: 'Review', status: 'warn' as const },
+              ].map((row) => (
+                <div key={row.label} className="flex items-center justify-between py-2.5 border-b border-brand-border/50 last:border-b-0">
+                  <span className="text-xs font-medium text-brand-ink/80">{row.label}</span>
+                  <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-lg ${row.status === 'pass' ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-700'}`}>
+                    {row.text || (row.status === 'pass' ? '✓ Pass' : 'Review')}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* Self-Learning */}
+            <p className="text-[10px] font-bold uppercase tracking-widest text-brand-ink/40 mt-5 mb-2.5">Self-Learning Loop</p>
+            <div className="bg-brand-surface border border-brand-border rounded-2xl p-4 mb-3">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-7 h-7 rounded-xl bg-brand-green/10 flex items-center justify-center">
+                  <ThumbsUp size={14} className="text-brand-green" />
+                </div>
+                <span className="font-serif text-sm font-semibold text-brand-ink">AI Summary Feedback</span>
+              </div>
+              <div className="h-2.5 rounded-full bg-brand-border overflow-hidden flex mb-2">
+                <div className="bg-brand-green h-full rounded-l-full" style={{ width: '78%' }} />
+                <div className="bg-brand-rust h-full rounded-r-full" style={{ width: '22%' }} />
+              </div>
+              <div className="flex justify-between text-xs text-brand-ink/50">
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-brand-green inline-block" /> 78% Helpful</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-brand-rust inline-block" /> 22% Needs work</span>
+              </div>
+              <div className="mt-3 text-xs font-semibold text-brand-rust bg-brand-rust/10 rounded-xl px-3 py-2">
+                ⚠ 3 summaries flagged for professional review
+              </div>
+            </div>
+
+            {/* Community */}
+            <p className="text-[10px] font-bold uppercase tracking-widest text-brand-ink/40 mt-5 mb-2.5">Community Health</p>
+            <div className="bg-brand-surface border border-brand-border rounded-2xl p-4 mb-3">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-7 h-7 rounded-xl bg-brand-rust/10 flex items-center justify-center">
+                  <Heart size={14} className="text-brand-rust" />
+                </div>
+                <span className="font-serif text-sm font-semibold text-brand-ink">Chautari & Ma Pani</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {[{ v: '6', l: 'Active clusters' }, { v: '89', l: 'Stories shared' }, { v: '12', l: 'Pro articles' }].map((s) => (
+                  <div key={s.l} className="text-center py-2.5 bg-brand-bg rounded-xl">
+                    <p className="font-serif text-xl leading-none text-brand-ink">{s.v}</p>
+                    <p className="text-[10px] text-brand-ink/50 mt-1">{s.l}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <p className="text-center text-[10px] text-brand-ink/30 mt-2 mb-4">
+              All metrics are aggregated. No individual user data is visible.<br />Privacy-preserving by design.
+            </p>
+          </>
+        ) : (
+          <>
+            <div className="bg-brand-surface border border-brand-border rounded-2xl p-3.5 mb-4 text-xs text-brand-ink/60 leading-relaxed">
+              Sahara&apos;s admin layer evolves with the platform. These capabilities are designed to scale trust, quality, and cultural reach as the community grows.
+            </div>
+            {[
+              { icon: <BookOpen size={16} />, bg: 'bg-brand-green/10', color: 'text-brand-green', name: 'Professional Knowledge Hub', status: 'planned', desc: "Verified clinicians contribute articles, review AI summaries, and enrich the knowledge base that grounds Maan's responses. Quality controlled by editorial workflow." },
+              { icon: <Mic size={16} />, bg: 'bg-brand-rust/10', color: 'text-brand-rust', name: 'Voice Input', status: 'in-progress', desc: 'Speech-to-text via Web Speech API for low-literacy users. Speak observations in Nepali or English — Maan transcribes and organizes automatically.' },
+              { icon: <Globe size={16} />, bg: 'bg-brand-ink/5', color: 'text-brand-ink/60', name: 'Multilingual Support', status: 'planned', desc: 'Full Nepali language toggle across all screens. Localized community content, professional profiles, and AI summaries. Hindi and Korean to follow.' },
+              { icon: <Bot size={16} />, bg: 'bg-brand-green/10', color: 'text-brand-green', name: 'AI Agents (Tier 3)', status: 'planned', desc: 'Automated content curation, pattern monitoring, and demographic bias detection. Every agent action requires human approval before execution.' },
+              { icon: <BarChart3 size={16} />, bg: 'bg-brand-rust/10', color: 'text-brand-rust', name: 'Advanced Analytics', status: 'planned', desc: 'Aggregated trend analysis across communities. Identify emerging mental health patterns by region without exposing individual data. Privacy-preserving by design.' },
+            ].map((f) => (
+              <div key={f.name} className="bg-brand-surface border border-brand-border rounded-2xl p-4 mb-3">
+                <div className="flex items-center gap-2.5 mb-2">
+                  <div className={`w-8 h-8 rounded-xl ${f.bg} flex items-center justify-center ${f.color}`}>{f.icon}</div>
+                  <span className="font-serif text-sm font-semibold text-brand-ink">{f.name}</span>
+                  <span className={`ml-auto text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-lg ${f.status === 'in-progress' ? 'bg-brand-rust/10 text-brand-rust' : 'bg-brand-green/10 text-brand-green'}`}>
+                    {f.status === 'in-progress' ? 'In Progress' : 'Planned'}
+                  </span>
+                </div>
+                <p className="text-xs text-brand-ink/60 leading-relaxed">{f.desc}</p>
+              </div>
+            ))}
+            <p className="text-center text-[10px] text-brand-ink/30 mt-2 mb-4">
+              Roadmap reflects team vision. Timelines adapt based on<br />community feedback and pilot learnings.
+            </p>
+          </>
+        )}
       </div>
     </div>
   );
