@@ -293,16 +293,16 @@ export default function App() {
 
   return (
     <div className="min-h-[100dvh] flex items-center justify-center sm:p-4 md:p-8 overflow-hidden">
-      {/* Persistent theme toggle — always accessible on every screen */}
-      <button
-        onClick={() => setIsDark(!isDark)}
-        className="fixed top-4 right-4 z-[200] w-8 h-8 rounded-full bg-brand-surface-alt border border-brand-border flex items-center justify-center text-brand-ink/60 hover:text-brand-ink transition-colors shadow-md"
-        aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-      >
-        {isDark ? <Sun size={14} /> : <Moon size={14} />}
-      </button>
       {/* Mobile Shell Container */}
       <div className="w-full h-[100dvh] max-w-md sm:h-[844px] sm:max-h-[min(90vh,844px)] sm:w-[390px] sm:min-w-[390px] bg-brand-bg sm:rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col relative sm:border-[8px] sm:border-white shrink-0">
+        {/* Persistent theme toggle — inside phone shell, visible on every screen */}
+        <button
+          onClick={() => setIsDark(!isDark)}
+          className="absolute top-3 right-3 z-[200] w-8 h-8 rounded-full bg-brand-surface-alt border border-brand-border flex items-center justify-center text-brand-ink/60 hover:text-brand-ink transition-colors shadow-md"
+          aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+        >
+          {isDark ? <Sun size={14} /> : <Moon size={14} />}
+        </button>
         
         {/* Content Area */}
         <div className="flex-1 overflow-y-auto relative scrollbar-hide animate-page-in" key={currentView}>
