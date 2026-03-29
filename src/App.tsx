@@ -801,19 +801,16 @@ function UserHomeScreen({ onStartChat, onExplore, userType, userName, language, 
           >
             {language === 'en' ? 'ने' : 'EN'}
           </button>
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-serif text-sm shadow-sm ${
-            userType === 'guest'
-              ? 'bg-brand-ink/10 border border-brand-border text-brand-ink/50'
-              : 'bg-brand-surface border border-brand-border text-brand-rust'
-          }`}>
-            {userType === 'guest' ? '?' : userName.charAt(0)}
-          </div>
           <button
             onClick={onLogout}
             aria-label="Back to Demo Select"
-            className="w-8 h-8 rounded-full bg-brand-surface-alt border border-brand-border flex items-center justify-center text-brand-ink hover:text-brand-rust transition-colors ml-1"
+            className={`w-8 h-8 rounded-full flex items-center justify-center font-serif text-sm shadow-sm transition-opacity hover:opacity-70 ${
+              userType === 'guest'
+                ? 'bg-brand-ink/10 border border-brand-border text-brand-ink/50'
+                : 'bg-brand-surface border border-brand-border text-brand-rust'
+            }`}
           >
-            <LogOut size={14} />
+            {userType === 'guest' ? '?' : userName.charAt(0)}
           </button>
         </div>
       </div>
