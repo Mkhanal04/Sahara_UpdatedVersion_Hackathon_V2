@@ -1,63 +1,22 @@
-import { GoogleGenAI } from "@google/genai";
 
-// Initialize the Gemini API client
-// vite.config.ts injects process.env.GEMINI_API_KEY via define — no VITE_ prefix needed
-const apiKey = process.env.GEMINI_API_KEY || '';
-
-const ai = new GoogleGenAI({ apiKey });
 
 export async function generateObservationSummary(
   messages: { role: 'user' | 'model', text: string }[],
   context: string
 ): Promise<{ summary: string; patterns: string[]; peerEvidence: string }> {
   try {
-    const userMessages = messages
-      .filter(m => m.role === 'user')
-      .map(m => m.text)
-      .join('\n\n');
-
-    const prompt = `You are an observation organizer for a culturally-grounded mental health platform. Given the following conversation from a ${context === 'family' ? 'concerned family member' : 'individual seeking self-understanding'}, create a structured summary.
-
-CONVERSATION:
-${userMessages}
-
-Respond in this EXACT JSON format (no markdown, no code fences):
-{
-  "summary": "A 2-3 sentence clinical-style summary of what was observed/shared. Use compassionate, non-diagnostic language.",
-  "patterns": ["Pattern 1 observed", "Pattern 2 observed", "Pattern 3 observed"],
-  "peerEvidence": "Resonated with: [Most relevant pattern] (X families/individuals)"
-}
-
-Rules:
-- NEVER diagnose or label conditions
-- Use the person's own words where possible
-- Frame observations as patterns, not symptoms
-- Keep the summary under 60 words
-- List 2-4 observable patterns
-- For peer evidence, pick the most relevant Ma Pani cluster and use a realistic count (20-80)`;
-
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      config: { temperature: 0.3 }
+    const response = await fetch('/api/summary', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages, context }),
     });
 
-    const text = response.text || '';
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      const parsed = JSON.parse(jsonMatch[0]);
-      return {
-        summary: parsed.summary || 'Summary could not be generated.',
-        patterns: parsed.patterns || [],
-        peerEvidence: parsed.peerEvidence || 'Similar patterns found on Sahara'
-      };
+    if (!response.ok) {
+      throw new Error(`API returned status ${response.status}`);
     }
 
-    return {
-      summary: text.slice(0, 200),
-      patterns: ['Observation noted'],
-      peerEvidence: 'Similar patterns found on Sahara'
-    };
+    const data = await response.json();
+    return data;
   } catch (error) {
     console.error("Error generating summary:", error);
     return context === 'family'
@@ -106,44 +65,20 @@ export async function generateChatResponse(messages: { role: 'user' | 'model', t
   if (detectCrisis(messages)) return CRISIS_RESPONSE;
 
   try {
-    const systemInstruction = `You are Maan (मन), a culturally grounded, empathetic AI companion for a mental health platform called Sahara, designed for the Nepali and South Asian diaspora.
-Your tone is warm, non-judgmental, and supportive.
-The user is currently in the context of: "${context === 'family' ? 'a concerned family member' : context === 'share' ? 'sharing their story with the community' : 'an individual seeking personal support'}".
-
-LANGUAGE RULE: Detect the language of the user's most recent message. If they write or speak in Nepali (Devanagari script or Romanized Nepali), respond in Nepali. If they write in English, respond in English. Never mix languages in a single response.
-
-Your goal is to listen, validate their feelings, and gently guide them. Keep your responses concise (2-4 sentences).
-Do not diagnose or offer medical advice. If they seem in crisis, gently suggest they talk to a professional or call a helpline (Nepal: 1166, US: 988).
-After a few exchanges, you may suggest they view community stories or talk to a professional, but don't be pushy.`;
-
-    const contents = messages.map(msg => ({
-      role: msg.role,
-      parts: [{ text: msg.text }]
-    }));
-
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: systemInstruction }] },
-          contents,
-          generationConfig: { temperature: 0.7 },
-        }),
-      }
-    );
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages, context }),
+    });
 
     if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      console.error("[Maan] Gemini API error:", response.status, err);
+      console.error("[Maan] Proxied API error:", response.status);
       return getFallbackChatResponse(messages.length, context);
     }
 
     const data = await response.json();
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!text) return getFallbackChatResponse(messages.length, context);
-    return text;
+    if (!data.reply) return getFallbackChatResponse(messages.length, context);
+    return data.reply;
 
   } catch (error) {
     console.error("Error generating AI response:", error);
